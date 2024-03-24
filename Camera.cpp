@@ -1,7 +1,7 @@
 #include "Camera.h"
-#include <imgui.h>
-#include <imgui_impl_glfw.h>
-#include <imgui_impl_opengl3.h>
+// #include <imgui.h>
+// #include <imgui_impl_glfw.h>
+// #include <imgui_impl_opengl3.h>
 
 Camera::Camera(int width, int height, glm::vec3 origin)
 {
@@ -59,36 +59,36 @@ void Camera::inputs(GLFWwindow* window)
     const float ROTATION_SPEED = 0.001f;
 
     // If not adjusting simulation attributes and shift is not pressed then pseudo-trackball is activated
-    if (!ImGui::IsWindowFocused(ImGuiHoveredFlags_AnyWindow) && !(glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS))
-    {
-        if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
-        {
-            // Get cursor position
-            double xpos, ypos;
+    // if (!ImGui::IsWindowFocused(ImGuiHoveredFlags_AnyWindow) && !(glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS))
+    // {
+    //     if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
+    //     {
+    //         // Get cursor position
+    //         double xpos, ypos;
 
-            glfwGetCursorPos(window, &xpos, &ypos);
+    //         glfwGetCursorPos(window, &xpos, &ypos);
 
-            // Center the trackball from top left to middle
-            xpos -= SCR_WIDTH / 2;
-            ypos -= SCR_HEIGHT / 2;
+    //         // Center the trackball from top left to middle
+    //         xpos -= SCR_WIDTH / 2;
+    //         ypos -= SCR_HEIGHT / 2;
 
-            // Calculate rotation angle
-            float angleX = -xpos * ROTATION_SPEED;
-            float angleY = -ypos * ROTATION_SPEED;
+    //         // Calculate rotation angle
+    //         float angleX = -xpos * ROTATION_SPEED;
+    //         float angleY = -ypos * ROTATION_SPEED;
             
-            // Apply rotation to camera
-            glm::mat4 rotationX = glm::rotate(glm::mat4(1.0f), glm::radians(angleX), up);
-            glm::mat4 rotationY = glm::rotate(glm::mat4(1.0f), glm::radians(angleY), glm::normalize(glm::cross(lookat, up)));
+    //         // Apply rotation to camera
+    //         glm::mat4 rotationX = glm::rotate(glm::mat4(1.0f), glm::radians(angleX), up);
+    //         glm::mat4 rotationY = glm::rotate(glm::mat4(1.0f), glm::radians(angleY), glm::normalize(glm::cross(lookat, up)));
 
-            // Update lookat
-            lookat = glm::mat3(rotationX) * lookat;
+    //         // Update lookat
+    //         lookat = glm::mat3(rotationX) * lookat;
 
-            // Rotate about objects
-            glm::mat4 translateX = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
-            origin = glm::mat3(rotationX) * origin;
+    //         // Rotate about objects
+    //         glm::mat4 translateX = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
+    //         origin = glm::mat3(rotationX) * origin;
 
-        }
-    }
+    //     }
+    // }
 
     // Additional logic for moving up and down
     if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS) {

@@ -50,7 +50,7 @@ void VArray::addBuffer(VBuffer& vbo, VBufferLayout& layout)
             elem.type, // Type of vertex
             elem.normalized, // No normalize
             layout.getStride(), // Stride --> Amount to second vertex
-            (const void*) offset // Offset of 0
+            reinterpret_cast<const void*>(offset) // Offset of 0
         );
 
         offset += elem.count * layout.getTypeSize(elem.type);
