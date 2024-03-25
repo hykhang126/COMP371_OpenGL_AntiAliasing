@@ -25,4 +25,5 @@ public:
 
 	glm::mat4 mat(float fov, float near, float far);
 	void inputs(GLFWwindow* window);
+	void inputs_AA(GLFWwindow* window);
 };

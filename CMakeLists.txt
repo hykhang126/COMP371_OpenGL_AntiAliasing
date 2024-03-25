@@ -51,6 +51,8 @@ endif()
    VertexBuffer.h
    VertexBufferLayout.cpp
    VertexBufferLayout.h
+   AntiAliasing.cpp
+   AntiAliasing.h
    vendors/stb_image.cpp
    vendors/stb_image.h
    textures/basketball.png
