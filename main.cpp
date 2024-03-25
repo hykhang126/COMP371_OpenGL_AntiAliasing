@@ -17,10 +17,10 @@
 #include "Cloth.h"
 
 #include "Renderer.h"
-#include "VBuffer.h"
-#include "VBufferLayout.h"
-#include "IBuffer.h"
-#include "VArray.h"
+#include "VertexBuffer.h"
+#include "VertexBufferLayout.h"
+#include "IndexBuffer.h"
+#include "VertexArray.h"
 #include "Shader.h"
 #include "Texture.h"
 #include "Camera.h"
@@ -45,7 +45,7 @@ int main(void)
     WINDOW_HEIGHT = 1080;
 
     /* Create a windowed mode window and its OpenGL context */
-    window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Cloth Simulation", NULL, NULL);
+    window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Anti-Aliasing", NULL, NULL);
     if (!window)
     {
         glfwTerminate();
@@ -170,7 +170,7 @@ int main(void)
 
         va2.addBuffer(sphere, lo);
 
-        IBuffer ibo2(sphereIndices.data(), sphereIndices.size());
+        IndexBuffer ibo2(sphereIndices.data(), sphereIndices.size());
         // *** *** //
 #endif
 
@@ -182,7 +182,7 @@ int main(void)
         std::vector<unsigned int> particleIndices = cloth.generateIndices(10, 10);
 
         // Creates index buffer layout
-        IBuffer ibo(particleIndices.data(), particleIndices.size());
+        IndexBuffer ibo(particleIndices.data(), particleIndices.size());
 
         //******* Spring instantiations *******// 
 
@@ -259,7 +259,7 @@ int main(void)
         float ar = (float)WINDOW_WIDTH / WINDOW_HEIGHT;
 
         // Creates texture buffer and binds to slot 0
-        Texture texture(src + "/textures/cloth.png");
+        Texture texture(src + "/textures/basketball.png");
         texture.bind(0);
 
         // Sets uniform location to texture at slot 0
@@ -355,7 +355,7 @@ int main(void)
             sphere.update(sphereVertices.data(), sphereVertices.size() * sizeof(Particle));
 #endif
 
-            // Camera shit
+            // Camera polling
             camera.inputs(window);
 
             // Specifies shader

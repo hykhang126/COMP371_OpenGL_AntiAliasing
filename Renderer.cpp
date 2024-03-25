@@ -18,7 +18,7 @@ void Renderer::clear()
 }
 
 // Renderer Methods
-void Renderer::draw(VArray& va, IBuffer& ibo, Shader& shader, bool isSphere) const // Not modifying
+void Renderer::draw(VArray& va, IndexBuffer& ibo, Shader& shader, bool isSphere) const // Not modifying
 {
     // Specifies shader
     shader.bind();

@@ -1,4 +1,4 @@
-#include "VBuffer.h"
+#include "VertexBuffer.h"
 #include "Renderer.h"
 
 VBuffer::VBuffer(const void* data, unsigned int size) {

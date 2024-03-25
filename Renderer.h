@@ -2,8 +2,8 @@
 
 #include <GL/glew.h>
 
-#include "VArray.h"
-#include "IBuffer.h"
+#include "VertexArray.h"
+#include "IndexBuffer.h"
 #include "Shader.h"
 
 class Renderer {
@@ -14,7 +14,7 @@ public:
 	~Renderer();
 
 	// Renderer methods
-	void draw(VArray& va, IBuffer& ibo, Shader& shader, bool isSphere) const; // Not modifying
+	void draw(VArray& va, IndexBuffer& ibo, Shader& shader, bool isSphere) const; // Not modifying
 	void clear();
 
 };

@@ -1,4 +1,4 @@
-#include "VBufferLayout.h"
+#include "VertexBufferLayout.h"
 
 // Constructors
 VBufferLayout::VBufferLayout() : m_Stride(0)

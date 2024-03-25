@@ -1,5 +1,5 @@
-#include "VArray.h"
-#include "VBufferLayout.h"
+#include "VertexArray.h"
+#include "VertexBufferLayout.h"
 #include "Renderer.h"
 
 // Constructors

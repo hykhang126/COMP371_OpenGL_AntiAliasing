@@ -37,22 +37,20 @@ endif()
    Camera.h
    Cloth.cpp
    Cloth.h
-   VBuffer.cpp
-   VBuffer.h
-   IBuffer.cpp
-   IBuffer.h
+   IndexBuffer.cpp
+   IndexBuffer.h
    Renderer.cpp
    Renderer.h
    Shader.cpp
    Shader.h
    Texture.cpp
    Texture.h
-   VArray.cpp
-   VArray.h
-   VBuffer.cpp
-   VBuffer.h
-   VBufferLayout.cpp
-   VBufferLayout.h
+   VertexArray.cpp
+   VertexArray.h
+   VertexBuffer.cpp
+   VertexBuffer.h
+   VertexBufferLayout.cpp
+   VertexBufferLayout.h
    vendors/stb_image.cpp
    vendors/stb_image.h
    textures/basketball.png
