@@ -3,9 +3,6 @@
 #include <iostream>
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
-// #include <imgui.h>
-// #include <imgui_impl_glfw.h>
-// #include <imgui_impl_opengl3.h>
 #include <fstream>
 #include <string>
 #include <sstream>
@@ -25,11 +22,6 @@
 #include "Texture.h"
 #include "Camera.h"
 #include "AntiAliasing.h"
-
-#define WITH_SPHERE
-#define FIXED_CORNERS
-#define ADD_SHEAR_SPRINGS
-#define ADD_BEND_SPRINGS
 
 #define ANTI_ALIASING
 
@@ -76,78 +68,12 @@ int main(void)
     // Simulation Setup
     Cloth cloth;
 
-    int CLOTH_WIDTH = 10;
-    int CLOTH_HEIGHT = 10;
-
-    //*** Function Placeholder ***//
-    std::vector<Particle> sphereVertices;
-
-#ifdef WITH_SPHERE
-    // Programmatic Vertex and Index positions referenced from
-    // https://learnopengl.com/code_viewer_gh.php?code=src/6.pbr/1.2.lighting_textured/lighting_textured.cpp
-
-    // *** Multiple Object Test *** //
-    std::vector<unsigned int> sphereIndices;
-
-    const unsigned int X_SEGMENTS = 32;
-    const unsigned int Y_SEGMENTS = 32;
-    const float PI = 3.14159265359f;
-
-    // Vertices
-    for (unsigned int x = 0; x <= X_SEGMENTS; ++x)
-    {
-        for (unsigned int y = 0; y <= Y_SEGMENTS; ++y)
-        {
-            float xSegment = (float)x / (float)X_SEGMENTS;
-            float ySegment = (float)y / (float)Y_SEGMENTS;
-            float xPos = std::cos(xSegment * 2.0f * PI) * std::sin(ySegment * PI);
-            float yPos = std::cos(ySegment * PI);
-            float zPos = std::sin(xSegment * 2.0f * PI) * std::sin(ySegment * PI);
-
-            // Sets position and texture coordinates
-            Particle sphereParticle;
-            sphereParticle.position = glm::vec3((xPos / 2.0f) + 0.5f, (yPos / 2.0f) - 1.0f, (zPos / 2.0f) - 1.0f);
-            sphereParticle.textureCoordinates = glm::vec2(xSegment, ySegment);
-
-            // Calculate normal (direction from the center of the sphere to the vertex)
-            glm::vec3 normal = glm::normalize(sphereParticle.position - glm::vec3(0.5f, -0.5f, -1.0f)); // Center of the sphere
-            sphereParticle.normal = normal;
-
-            sphereVertices.push_back(sphereParticle);
-        }
-    }
-
-    // Indices
-    bool oddRow = false;
-    for (unsigned int y = 0; y < Y_SEGMENTS; ++y)
-    {
-        if (!oddRow) // even rows: y == 0, y == 2; and so on
-        {
-            for (unsigned int x = 0; x <= X_SEGMENTS; ++x)
-            {
-                sphereIndices.push_back(y * (X_SEGMENTS + 1) + x);
-                sphereIndices.push_back((y + 1) * (X_SEGMENTS + 1) + x);
-            }
-        }
-        else
-        {
-            for (int x = X_SEGMENTS; x >= 0; --x)
-            {
-                sphereIndices.push_back((y + 1) * (X_SEGMENTS + 1) + x);
-                sphereIndices.push_back(y * (X_SEGMENTS + 1) + x);
-            }
-        }
-        oddRow = !oddRow;
-    }
-    // ***  *** //
-#endif
-
     // Array of particles
     std::vector<Particle> particles = cloth.initializeClothVertexArray(10, 10);
 
     // Creates vertex array
     VArray va;
-
+    
     // Creates vertex buffer
     VBuffer currentBuffer(particles.data(), particles.size() * sizeof(Particle));
 
@@ -163,18 +89,6 @@ int main(void)
     // Normal Coordinates
     lo.add<float>(3);
 
-#ifdef WITH_SPHERE
-    //*** TESTING ***//
-    VArray va2;
-
-    VBuffer sphere(sphereVertices.data(), sphereVertices.size() * sizeof(Particle));
-
-    va2.addBuffer(sphere, lo);
-
-    IndexBuffer ibo2(sphereIndices.data(), sphereIndices.size());
-    // *** *** //
-#endif
-
     // Attaches vertex buffer and vertex buffer layout
     // to the vertex array
     va.addBuffer(currentBuffer, lo);
@@ -184,66 +98,6 @@ int main(void)
 
     // Creates index buffer layout
     IndexBuffer ibo(particleIndices.data(), particleIndices.size());
-
-    //******* Spring instantiations *******// 
-
-    // Spring Constants
-    float ks_STRETCH = 0.75f;
-    float kd_STRETCH = -0.25f;
-    float ks_SHEAR = 0.75f;
-    float kd_SHEAR = -0.25f;
-    float ks_BEND = 0.95f;
-    float kd_BEND = -0.25f;
-
-    // Springs initialization
-    std::vector<Spring> springs;
-
-    // Stretch Springs //
-
-    // --> Horizontal: Adds 90 horizontal stretch springs
-    for (int i = 0; i < particles.size() - 1; i += 10)
-    {
-        for (int j = i; j < i + 9; j++)
-            springs.push_back(cloth.initializeSpring(particles[j], particles[j + 1], ks_STRETCH, kd_STRETCH));
-    }
-    // --> Vertical: Adds 90 vertical stretch springs
-    for (int i = 0; i < particles.size() - 10; i += 10)
-    {
-        for (int j = i; j < i + 10; j++)
-            springs.push_back(cloth.initializeSpring(particles[j], particles[j + 10], ks_STRETCH, kd_STRETCH));
-    }
-
-#ifdef ADD_SHEAR_SPRINGS
-    // Shear Springs //
-    // --> Horizontal: Adds 81 (bottom left to top right) shear springs
-    for (int i = 0; i < particles.size() - 10; i += 10)
-    {
-        for (int j = i; j < i + 9; j++)
-            springs.push_back(cloth.initializeSpring(particles[j], particles[j + 11], ks_SHEAR, kd_SHEAR));
-    }
-    // --> Vertical: Adds 81 (bottom right to top left) left shear springs
-    for (int i = 0; i < particles.size() - 10; i += 10)
-    {
-        for (int j = i + 1; j < i + 10; j++)
-            springs.push_back(cloth.initializeSpring(particles[j], particles[j + 9], ks_SHEAR, kd_SHEAR));
-    }
-#endif
-
-#ifdef ADD_BEND_SPRINGS
-    // Bend Springs //
-    // --> Horizontal: Adds 40 horizontal bend springs
-    for (int i = 0; i < particles.size() - 1; i += 10)
-    {
-        for (int j = i; j < i + 8; j += 2)
-            springs.push_back(cloth.initializeSpring(particles[j], particles[j + 2], ks_BEND, kd_BEND));
-    }
-    // --> Vertical: Adds 40 vertical bend springs
-    for (int i = 0; i < particles.size() - 20; i += 20)
-    {
-        for (int j = i; j < i + 10; j++)
-            springs.push_back(cloth.initializeSpring(particles[j], particles[j + 20], ks_BEND, kd_BEND));
-    }
-#endif
 
     std::string src = getCurrentPath();
 
@@ -271,49 +125,9 @@ int main(void)
     currentBuffer.unbind();
     ibo.unbind();
 
-#ifdef WITH_SPHERE
-    va2.unbind();
-    sphere.unbind();
-    ibo2.unbind();
-#endif
-
     Renderer renderer;
 
-#ifdef WITH_SPHERE
-    Renderer renderer2;
-#endif
-
-    // IMGUI_CHECKVERSION();
-    // ImGui::CreateContext();
-    // ImGui::StyleColorsDark();
-    // ImGui_ImplGlfw_InitForOpenGL(window, true);
-    // ImGui_ImplOpenGL3_Init("#version 330");
-
     Camera camera(WINDOW_WIDTH, WINDOW_HEIGHT, glm::vec3(0.0f, -0.5f, 4.0f));
-
-    // Initialize velocities and forces
-    std::map<Particle*, glm::vec3> velocities;
-    std::map<Particle*, glm::vec3> forces;
-
-    // Map for velocities and forces at particle addresses
-    // Constant time access?
-    for (int i = 0; i < particles.size(); i++)
-    {
-        glm::vec3 zeroes(0);
-        velocities[&particles[i]] = zeroes;
-        forces[&particles[i]] = zeroes;
-    }
-
-    // Wireframe
-    // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-
-    // Changeables
-    float wind = 0.0f;
-    float mass = 0.5f;
-    bool isFixed = true;
-
-    // Bidirectional Lighting
-    shader.setUniform1i("is_Bidirectional", 1);
 
 #ifdef ANTI_ALIASING
     AntiAliasing aa (WINDOW_WIDTH, WINDOW_HEIGHT);
@@ -325,40 +139,7 @@ int main(void)
         // Clear renderer
         renderer.clear();
 
-#ifdef WITH_SPHERE
-        renderer2.clear();
-#endif
-
-        // ImGui_ImplOpenGL3_NewFrame();
-        // ImGui_ImplGlfw_NewFrame();
-        // ImGui::NewFrame();
-
         glm::mat4 viewMat = camera.mat(45.0, 0.1f, 100.0f);
-
-        // Simulation Step
-        cloth.calculateForces(particles, velocities, forces, springs, wind, sphereVertices); // --> sums all forces external and internal on particles
-
-        if (isFixed)
-        {
-#ifdef FIXED_CORNERS
-            //*** Remove forces from top 2 particles ***//
-            glm::vec3 zeroes(0);
-            velocities[&particles[99]] = zeroes;
-            velocities[&particles[90]] = zeroes;
-            forces[&particles[99]] = zeroes;
-            forces[&particles[90]] = zeroes;
-            //***  ***//
-#endif
-        }
-
-        cloth.semiImplicit(particles, velocities, forces, mass); // --> semi implicit euler integration
-        cloth.inverseSpringForce(particles, velocities, forces, springs); // --> checks springs rest length, applies opposite forces to particles proportionally
-
-        currentBuffer.update(particles.data(), particles.size() * sizeof(Particle));
-
-#ifdef WITH_SPHERE
-        sphere.update(sphereVertices.data(), sphereVertices.size() * sizeof(Particle));
-#endif
 
         // Camera polling
         camera.inputs(window);
@@ -379,23 +160,8 @@ int main(void)
         // Draws triangles
         renderer.draw(va, ibo, shader, false);
 
-        // Bidirectional Lighting OFF (Sphere)
-        shader.setUniform1i("is_Bidirectional", 0);
-
-#ifdef WITH_SPHERE
-        renderer2.draw(va2, ibo2, shader, true);
-#endif
-
-        {
-            // ImGui::Begin("Simulation Attributes", nullptr, ImGuiWindowFlags_NoMove);
-            // ImGui::SliderFloat("Wind Intensity", &wind, 0.0f, 0.5f);
-            // ImGui::SliderFloat("Change Particle Mass", &mass, 0.1f, 0.5f);
-            // ImGui::Checkbox("Unfix Corners", &isFixed);
-            // ImGui::End();
-        }
-
-        // ImGui::Render();
-        // ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+        // // Bidirectional Lighting OFF (Sphere)
+        // shader.setUniform1i("is_Bidirectional", 0);
 
         /* Swap front and back buffers */
         glfwSwapBuffers(window);
@@ -403,10 +169,6 @@ int main(void)
         /* Poll for and process events */
         glfwPollEvents();
     }
-
-    // ImGui_ImplOpenGL3_Shutdown();
-    // ImGui_ImplGlfw_Shutdown();
-    // ImGui::DestroyContext();
 
     glfwTerminate();
     return 0;
