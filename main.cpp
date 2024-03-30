@@ -25,7 +25,20 @@
 
 #define ANTI_ALIASING
 
+
 static std::string getCurrentPath();
+void mouse_callback(GLFWwindow* window, double xpos, double ypos);
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
+
+// Settings
+int WINDOW_WIDTH = 800;
+int WINDOW_HEIGHT = 600;
+
+// camera
+Camera camera(WINDOW_WIDTH, WINDOW_HEIGHT, glm::vec3(0.0f, -0.5f, 4.0f));
+float lastX = (float)WINDOW_WIDTH / 2.0;
+float lastY = (float)WINDOW_HEIGHT / 2.0;
+bool firstMouse = true;
 
 int main(void)
 {
@@ -35,11 +48,8 @@ int main(void)
     if (!glfwInit())
         return -1;
 
-    int WINDOW_WIDTH = 1920;
-    int WINDOW_HEIGHT = 1080;
-
     /* Create a windowed mode window and its OpenGL context */
-    window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Anti-Aliasing", NULL, NULL);
+    window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_WIDTH, "Anti-Aliasing", NULL, NULL);
     if (!window)
     {
         glfwTerminate();
@@ -60,44 +70,39 @@ int main(void)
     // Z-buffer
     glEnable(GL_DEPTH_TEST);
 
-    // Creates VAO
-    unsigned int vao;
-    glGenVertexArrays(1, &vao);
-    glBindVertexArray(vao);
+    // // Simulation Setup
+    // Cloth cloth;
 
-    // Simulation Setup
-    Cloth cloth;
+    // // Array of particles
+    // std::vector<Particle> particles = cloth.initializeClothVertexArray(10, 10);
 
-    // Array of particles
-    std::vector<Particle> particles = cloth.initializeClothVertexArray(10, 10);
-
-    // Creates vertex array
-    VArray va;
+    // // Creates vertex array
+    // VArray va;
     
-    // Creates vertex buffer
-    VBuffer currentBuffer(particles.data(), particles.size() * sizeof(Particle));
+    // // Creates vertex buffer
+    // VBuffer currentBuffer(particles.data(), particles.size() * sizeof(Particle));
 
-    // Creates vertex buffer layout
-    VBufferLayout lo;
+    // // Creates vertex buffer layout
+    // VBufferLayout lo;
 
-    // Specifies new layout and adds vertex coordinates
-    lo.add<float>(3);
+    // // Specifies new layout and adds vertex coordinates
+    // lo.add<float>(3);
 
-    // Texture coordinates
-    lo.add<float>(2);
+    // // Texture coordinates
+    // lo.add<float>(2);
 
-    // Normal Coordinates
-    lo.add<float>(3);
+    // // Normal Coordinates
+    // lo.add<float>(3);
 
-    // Attaches vertex buffer and vertex buffer layout
-    // to the vertex array
-    va.addBuffer(currentBuffer, lo);
+    // // Attaches vertex buffer and vertex buffer layout
+    // // to the vertex array
+    // va.addBuffer(currentBuffer, lo);
 
-    // Cloth indices
-    std::vector<unsigned int> particleIndices = cloth.generateIndices(10, 10);
+    // // Cloth indices
+    // std::vector<unsigned int> particleIndices = cloth.generateIndices(10, 10);
 
-    // Creates index buffer layout
-    IndexBuffer ibo(particleIndices.data(), particleIndices.size());
+    // // Creates index buffer layout
+    // IndexBuffer ibo(particleIndices.data(), particleIndices.size());
 
     std::string src = getCurrentPath();
 
@@ -110,9 +115,6 @@ int main(void)
     // Sets known shader uniform
     shader.setUniform4f("u_Color", 0.2f, 0.5f, 0.4f, 1.0f);
 
-    // Aspect ratio modifier
-    float ar = (float)WINDOW_WIDTH / WINDOW_HEIGHT;
-
     // Creates texture buffer and binds to slot 0
     Texture texture(src + "/textures/basketball.png");
     texture.bind(0);
@@ -120,14 +122,36 @@ int main(void)
     // Sets uniform location to texture at slot 0
     shader.setUniform1i("u_Texture", 0);
 
-    shader.unbind();
-    va.unbind();
-    currentBuffer.unbind();
-    ibo.unbind();
+    float cubeVertices[] = {
+        // positions       
+        -0.5f, -0.5f, -0.5f,
+         0.5f, -0.5f, -0.5f,
+         0.5f,  0.5f, -0.5f,
+         0.5f,  0.5f, -0.5f,
+        -0.5f,  0.5f, -0.5f,
+        -0.5f, -0.5f, -0.5f,
+    };
+
+    // setup cube VAO
+    unsigned int cubeVAO, cubeVBO;
+    glGenVertexArrays(1, &cubeVAO);
+    glGenBuffers(1, &cubeVBO);
+    glBindVertexArray(cubeVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVertices), &cubeVertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+
+    // shader.unbind();
+    // va.unbind();
+    // currentBuffer.unbind();
+    // ibo.unbind();
 
     Renderer renderer;
 
-    Camera camera(WINDOW_WIDTH, WINDOW_HEIGHT, glm::vec3(0.0f, -0.5f, 4.0f));
+    // timing
+    float deltaTime = 0.0f;
+    float lastFrame = 0.0f;
 
 #ifdef ANTI_ALIASING
     AntiAliasing aa (WINDOW_WIDTH, WINDOW_HEIGHT);
@@ -136,14 +160,22 @@ int main(void)
     /* Loop until the user closes the window */
     while (!glfwWindowShouldClose(window))
     {
-        // Clear renderer
-        renderer.clear();
+
+        // per-frame time logic
+        // --------------------
+        float currentFrame = static_cast<float>(glfwGetTime());
+        deltaTime = currentFrame - lastFrame;
+        lastFrame = currentFrame;
+
+        // render
+        // ------
+        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        glBindVertexArray(cubeVAO);
+        glDrawArrays(GL_TRIANGLES, 0, 36);   
 
         glm::mat4 viewMat = camera.mat(45.0, 0.1f, 100.0f);
-
-        // Camera polling
-        camera.inputs(window);
-        camera.inputs_AA(window);
 
         // Specifies shader
         shader.bind();
@@ -157,17 +189,21 @@ int main(void)
         // Bidirectional Lighting ON (Cloth)
         shader.setUniform1i("is_Bidirectional", 1);
 
-        // Draws triangles
-        renderer.draw(va, ibo, shader, false);
+        // // Draws triangles
+        // renderer.draw(va, ibo, shader, false);
 
         // // Bidirectional Lighting OFF (Sphere)
         // shader.setUniform1i("is_Bidirectional", 0);
 
-        /* Swap front and back buffers */
-        glfwSwapBuffers(window);
+        // Camera polling
+        camera.inputs(window);
+        camera.inputs_AA(window);
 
-        /* Poll for and process events */
+        // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
+        // -------------------------------------------------------------------------------
+        glfwSwapBuffers(window);
         glfwPollEvents();
+
     }
 
     glfwTerminate();
@@ -180,4 +216,33 @@ static std::string getCurrentPath() {
 
     // Extract the directory from the file path
     return currentFilePath.parent_path().string();
+}
+
+// glfw: whenever the mouse moves, this callback is called
+// -------------------------------------------------------
+void mouse_callback(GLFWwindow* window, double xposIn, double yposIn)
+{
+    float xpos = static_cast<float>(xposIn);
+    float ypos = static_cast<float>(yposIn);
+    if (firstMouse)
+    {
+        lastX = xpos;
+        lastY = ypos;
+        firstMouse = false;
+    }
+
+    float xoffset = xpos - lastX;
+    float yoffset = lastY - ypos; // reversed since y-coordinates go from bottom to top
+
+    lastX = xpos;
+    lastY = ypos;
+
+    // camera.ProcessMouseMovement(xoffset, yoffset);
+}
+
+// glfw: whenever the mouse scroll wheel scrolls, this callback is called
+// ----------------------------------------------------------------------
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
+{
+    // camera.ProcessMouseScroll(static_cast<float>(yoffset));
 }
