@@ -17,7 +17,7 @@ glm::mat4 Camera::mat(float fov, float near, float far)
 
     view = glm::lookAt(origin, origin + lookat, up);
 
-    view = glm::rotate(view, glm::radians(45.0f), up);
+    view = glm::rotate(view, glm::radians(0.0f), up);
 
     projection = glm::perspective(glm::radians(fov), (float)width / height, near, far);
 
@@ -45,13 +45,6 @@ void Camera::inputs(GLFWwindow* window)
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
         origin += glm::normalize(glm::cross(lookat, up)) * cameraSpeed;
     }
-
-    // // Globals
-    // float yaw = 0.0f;
-    // float pitch = 0.0f;
-    // float sensitivity = 0.1f; // Adjust this value for rotation speed
-    // bool firstClick = true;
-    // double lastX, lastY;
 
     // Additional logic for moving up and down
     if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS) {

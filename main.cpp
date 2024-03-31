@@ -11,7 +11,6 @@
 #include <glm/gtx/transform.hpp>
 #include <vector>
 #include <filesystem>
-#include "Cloth.h"
 
 #include "Renderer.h"
 #include "VertexBuffer.h"
@@ -30,12 +29,36 @@ static std::string getCurrentPath();
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 
+struct Particle {
+    glm::vec3 position;
+    glm::vec2 textureCoordinates;
+};
+
+float cubeVertices[] = {
+    // positions       
+    -0.5f, -0.0f,
+    0.5f, -0.5f,
+    0.5f, 0.5f,
+
+};
+
+// Indices for vertices order
+unsigned int cubeIndices[] =
+{
+    0, 1, 2, // Lower triangle
+    2, 3, 0 // Upper triangle
+};
+
 // Settings
-int WINDOW_WIDTH = 800;
-int WINDOW_HEIGHT = 600;
+int WINDOW_WIDTH = 1080;
+int WINDOW_HEIGHT = 720;
+
+// timing
+float deltaTime = 0.0f;
+float lastFrame = 0.0f;
 
 // camera
-Camera camera(WINDOW_WIDTH, WINDOW_HEIGHT, glm::vec3(0.0f, -0.5f, 4.0f));
+Camera camera(WINDOW_WIDTH *2, WINDOW_HEIGHT *2, glm::vec3(0.0f, 0.0f, 4.0f));
 float lastX = (float)WINDOW_WIDTH / 2.0;
 float lastY = (float)WINDOW_HEIGHT / 2.0;
 bool firstMouse = true;
@@ -70,67 +93,45 @@ int main(void)
     // Z-buffer
     glEnable(GL_DEPTH_TEST);
 
-    // // Simulation Setup
-    // Cloth cloth;
-
-    // // Array of particles
-    // std::vector<Particle> particles = cloth.initializeClothVertexArray(10, 10);
-
-    // // Creates vertex array
-    // VArray va;
-    
-    // // Creates vertex buffer
-    // VBuffer currentBuffer(particles.data(), particles.size() * sizeof(Particle));
-
-    // // Creates vertex buffer layout
-    // VBufferLayout lo;
-
-    // // Specifies new layout and adds vertex coordinates
-    // lo.add<float>(3);
-
-    // // Texture coordinates
-    // lo.add<float>(2);
-
-    // // Normal Coordinates
-    // lo.add<float>(3);
-
-    // // Attaches vertex buffer and vertex buffer layout
-    // // to the vertex array
-    // va.addBuffer(currentBuffer, lo);
-
-    // // Cloth indices
-    // std::vector<unsigned int> particleIndices = cloth.generateIndices(10, 10);
-
-    // // Creates index buffer layout
-    // IndexBuffer ibo(particleIndices.data(), particleIndices.size());
-
     std::string src = getCurrentPath();
 
-    // Creates shader off of input file
-    Shader shader(src + "/shaders/Basic.shader");
+    // // Creates shader off of input file
+    // Shader shader(src + "/shaders/Basic.shader");
 
-    // Binds shader to program
-    shader.bind();
+    // // Binds shader to program
+    // shader.bind();
 
-    // Sets known shader uniform
-    shader.setUniform4f("u_Color", 0.2f, 0.5f, 0.4f, 1.0f);
+    // // Sets known shader uniform
+    // shader.setUniform4f("u_Color", 0.2f, 0.5f, 0.4f, 1.0f);
+
+    // // Sets uniform location to texture at slot 0
+    // shader.setUniform1i("u_Texture", 0);
 
     // Creates texture buffer and binds to slot 0
     Texture texture(src + "/textures/basketball.png");
     texture.bind(0);
 
-    // Sets uniform location to texture at slot 0
-    shader.setUniform1i("u_Texture", 0);
+    // // Creates vertex array
+    // VArray va;
 
-    float cubeVertices[] = {
-        // positions       
-        -0.5f, -0.5f, -0.5f,
-         0.5f, -0.5f, -0.5f,
-         0.5f,  0.5f, -0.5f,
-         0.5f,  0.5f, -0.5f,
-        -0.5f,  0.5f, -0.5f,
-        -0.5f, -0.5f, -0.5f,
-    };
+    // // Creates vertex buffer
+    // VBuffer vb(cubeVertices, sizeof(cubeVertices) * sizeof(float));
+
+    // // Creates vertex buffer layout
+    // VBufferLayout layout;
+
+    // // Specifies new layout and adds vertex coordinates
+    // layout.add<float>(2);
+
+    // // Attaches vertex buffer and vertex buffer layout
+    // // to the vertex array
+    // va.addBuffer(vb, layout);
+
+    // // Creates index buffer layout
+    // IndexBuffer ibo( cubeIndices, sizeof(cubeIndices));
+
+    // // Create renderer
+    // Renderer renderer;
 
     // setup cube VAO
     unsigned int cubeVAO, cubeVBO;
@@ -140,18 +141,73 @@ int main(void)
     glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVertices), &cubeVertices, GL_STATIC_DRAW);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
 
-    // shader.unbind();
-    // va.unbind();
-    // currentBuffer.unbind();
-    // ibo.unbind();
 
-    Renderer renderer;
 
-    // timing
-    float deltaTime = 0.0f;
-    float lastFrame = 0.0f;
+    // // RENDER TO TEXTURE
+    // // The framebuffer, which regroups 0, 1, or more textures, and 0 or 1 depth buffer.
+    // GLuint FramebufferName = 0;
+    // glGenFramebuffers(1, &FramebufferName);
+    // glBindFramebuffer(GL_FRAMEBUFFER, FramebufferName);
+
+    // // The texture we're going to render to
+    // GLuint renderedTexture;
+    // glGenTextures(1, &renderedTexture);
+
+    // // "Bind" the newly created texture : all future texture functions will modify this texture
+    // glBindTexture(GL_TEXTURE_2D, renderedTexture);
+
+    // // Give an empty image to OpenGL ( the last "0" )
+    // glTexImage2D(GL_TEXTURE_2D, 0,GL_RGB, 1024, 768, 0,GL_RGB, GL_UNSIGNED_BYTE, 0);
+
+    // // Poor filtering. Needed !
+    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+    // // Set "renderedTexture" as our colour attachement #0
+    // glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, renderedTexture, 0);
+
+    // // Set the list of draw buffers.
+    // GLenum DrawBuffers[1] = {GL_COLOR_ATTACHMENT0};
+    // glDrawBuffers(1, DrawBuffers); // "1" is the size of DrawBuffers
+
+    // // Always check that our framebuffer is ok
+    // if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+    // return false;
+
+    // // Render to our framebuffer
+    // glBindFramebuffer(GL_FRAMEBUFFER, FramebufferName);
+    // // glViewport(0,0,1024,768); // Render on the whole framebuffer, complete from the lower left corner to the upper right
+
+    // // The fullscreen quad's FBO
+    // GLuint quad_VertexArrayID;
+    // glGenVertexArrays(1, &quad_VertexArrayID);
+    // glBindVertexArray(quad_VertexArrayID);
+
+    // static const GLfloat g_quad_vertex_buffer_data[] = {
+    //     -1.0f, -1.0f, 0.0f,
+    //     1.0f, -1.0f, 0.0f,
+    //     -1.0f,  1.0f, 0.0f,
+    //     -1.0f,  1.0f, 0.0f,
+    //     1.0f, -1.0f, 0.0f,
+    //     1.0f,  1.0f, 0.0f,
+    // };
+
+    // GLuint quad_vertexbuffer;
+    // glGenBuffers(1, &quad_vertexbuffer);
+    // glBindBuffer(GL_ARRAY_BUFFER, quad_vertexbuffer);
+    // glBufferData(GL_ARRAY_BUFFER, sizeof(g_quad_vertex_buffer_data), g_quad_vertex_buffer_data, GL_STATIC_DRAW);
+
+    // // Create and compile our GLSL program from the shaders
+    // GLuint quad_programID = Shader::LoadShaders( src + "/shaders/Passthrough.vertex", src + "/shaders/firstpass.frag" );
+    // GLuint texID = glGetUniformLocation(quad_programID, "renderedTexture");
+    // GLuint timeID = glGetUniformLocation(quad_programID, "time");
+
+    // // Render to the screen
+    // glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+
 
 #ifdef ANTI_ALIASING
     AntiAliasing aa (WINDOW_WIDTH, WINDOW_HEIGHT);
@@ -160,6 +216,7 @@ int main(void)
     /* Loop until the user closes the window */
     while (!glfwWindowShouldClose(window))
     {
+        // renderer.clear();
 
         // per-frame time logic
         // --------------------
@@ -167,33 +224,17 @@ int main(void)
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
 
+        glm::mat4 viewMat = camera.mat(45.0f, 0.1f, 100.0f);
+
         // render
         // ------
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
         glBindVertexArray(cubeVAO);
-        glDrawArrays(GL_TRIANGLES, 0, 36);   
-
-        glm::mat4 viewMat = camera.mat(45.0, 0.1f, 100.0f);
-
-        // Specifies shader
-        shader.bind();
-
-        // Sets known shader uniform
-        shader.setUniform4f("u_Color", 0.3f, 0.5f, 0.4f, 1.0f);
-
-        // Sets projection matrix uniform
-        shader.setUniformMat4f("u_Camera", viewMat);
-
-        // Bidirectional Lighting ON (Cloth)
-        shader.setUniform1i("is_Bidirectional", 1);
-
+        glDrawArrays(GL_TRIANGLES, 0, 36);     
+        
         // // Draws triangles
         // renderer.draw(va, ibo, shader, false);
-
-        // // Bidirectional Lighting OFF (Sphere)
-        // shader.setUniform1i("is_Bidirectional", 0);
 
         // Camera polling
         camera.inputs(window);

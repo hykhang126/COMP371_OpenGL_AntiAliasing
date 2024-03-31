@@ -56,6 +56,5 @@ endif()
    vendors/stb_image.cpp
    vendors/stb_image.h
    textures/basketball.png
-   textures/cloth.png
    shaders/Basic.shader
 )

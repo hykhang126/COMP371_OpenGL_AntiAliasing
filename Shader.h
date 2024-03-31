@@ -39,6 +39,9 @@ public:
 	// Getters
 	int getUniformLocation(const std::string& name);
 
+	// Load from file and return GLuint
+	static GLuint LoadShaders(const std::string vertex_file_path,const std::string fragment_file_path);
+
 private:
 	unsigned int renderer_id;
 
