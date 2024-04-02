@@ -23,35 +23,39 @@
 #include "AntiAliasing.h"
 
 #define ANTI_ALIASING
+#define RENDER_TO_TEXTURE
+// #define MY_SHADER
 
 
 static std::string getCurrentPath();
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
+void framebuffer_size_callback(GLFWwindow* window, int width, int height);
+void processInput(GLFWwindow *window);
 
 struct Particle {
     glm::vec3 position;
     glm::vec2 textureCoordinates;
 };
 
-float cubeVertices[] = {
-    // positions       
-    -0.5f, -0.0f,
-    0.5f, -0.5f,
-    0.5f, 0.5f,
+float triVertices[] = {
+    // positions      // texture Coords    
+    -0.5f, -0.0f,       0.5f, 0.0f, // middle left
+    0.5f, -0.5f,        1.0f, 0.0f, // bottom right
+    0.5f, 0.5f,         1.0f, 1.0f, // top right
 
 };
 
-// Indices for vertices order
-unsigned int cubeIndices[] =
-{
-    0, 1, 2, // Lower triangle
-    2, 3, 0 // Upper triangle
-};
+// // Indices for vertices order
+// unsigned int triIndices[] =
+// {
+//     0, 1, 2, // Lower triangle
+//     2, 3, 0 // Upper triangle
+// };
 
 // Settings
-int WINDOW_WIDTH = 1080;
-int WINDOW_HEIGHT = 720;
+int WINDOW_WIDTH = 500;
+int WINDOW_HEIGHT = 500;
 
 // timing
 float deltaTime = 0.0f;
@@ -65,11 +69,15 @@ bool firstMouse = true;
 
 int main(void)
 {
-    GLFWwindow* window;
-
     /* Initialize the library */
     if (!glfwInit())
         return -1;
+
+#ifdef __APPLE__
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+#endif
+
+    GLFWwindow* window;
 
     /* Create a windowed mode window and its OpenGL context */
     window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_WIDTH, "Anti-Aliasing", NULL, NULL);
@@ -93,23 +101,27 @@ int main(void)
     // Z-buffer
     glEnable(GL_DEPTH_TEST);
 
+    // Wide frame mode
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
     std::string src = getCurrentPath();
 
-    // // Creates shader off of input file
-    // Shader shader(src + "/shaders/Basic.shader");
+#ifdef MY_SHADER
+    // Creates shader off of input file
+    Shader shader(src + "/shaders/Basic.shader");
+#endif
 
     // // Binds shader to program
     // shader.bind();
 
-    // // Sets known shader uniform
-    // shader.setUniform4f("u_Color", 0.2f, 0.5f, 0.4f, 1.0f);
+    // glm::mat4 viewMat = camera.mat(45.0f, 0.1f, 100.0f);
 
-    // // Sets uniform location to texture at slot 0
-    // shader.setUniform1i("u_Texture", 0);
+    // // Sets projection matrix uniform
+    // shader.setUniformMat4f("u_Camera", viewMat);
 
-    // Creates texture buffer and binds to slot 0
-    Texture texture(src + "/textures/basketball.png");
-    texture.bind(0);
+    // // Creates texture buffer and binds to slot 0
+    // Texture texture(src + "/textures/basketball.png");
+    // texture.bind(0);
 
     // // Creates vertex array
     // VArray va;
@@ -139,75 +151,88 @@ int main(void)
     glGenBuffers(1, &cubeVBO);
     glBindVertexArray(cubeVAO);
     glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVertices), &cubeVertices, GL_STATIC_DRAW);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(triVertices), &triVertices, GL_STATIC_DRAW);
+    // position attribute
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);  
+    // texture coord attribute
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+    glEnableVertexAttribArray(1);  
+
+
+#ifdef RENDER_TO_TEXTURE
+    // RENDER TO TEXTURE
+    // The framebuffer, which regroups 0, 1, or more textures, and 0 or 1 depth buffer.
+    GLuint FramebufferName = 0;
+    glGenFramebuffers(1, &FramebufferName);
+    glBindFramebuffer(GL_FRAMEBUFFER, FramebufferName);
+
+    // The texture we're going to render to
+    GLuint renderedTexture;
+    glGenTextures(1, &renderedTexture);
+
+    // "Bind" the newly created texture : all future texture functions will modify this texture
+    glBindTexture(GL_TEXTURE_2D, renderedTexture);
+
+    // Give an empty image to OpenGL ( the last "0" )
+    glTexImage2D(GL_TEXTURE_2D, 0,GL_RGB, 15, 15, 0,GL_RGB, GL_UNSIGNED_BYTE, 0);
+
+    // Poor filtering. Needed !
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+    // Set "renderedTexture" as our colour attachement #0
+    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, renderedTexture, 0);
+
+    // Set the list of draw buffers.
+    GLenum DrawBuffers[1] = {GL_COLOR_ATTACHMENT0};
+    glDrawBuffers(1, DrawBuffers); // "1" is the size of DrawBuffers
+
+    // Always check that our framebuffer is ok
+    if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+    return false;
+
+    // Render to our framebuffer
+    glBindFramebuffer(GL_FRAMEBUFFER, FramebufferName);
+    // glViewport(0,0,1024,768); // Render on the whole framebuffer, complete from the lower left corner to the upper right
+
+    // The fullscreen quad's FBO
+    GLuint quad_VertexArrayID;
+    glGenVertexArrays(1, &quad_VertexArrayID);
+    glBindVertexArray(quad_VertexArrayID);
+
+    static const GLfloat g_quad_vertex_buffer_data[] = {
+        -1.0f, -1.0f, 0.0f,
+        1.0f, -1.0f, 0.0f,
+        -1.0f,  1.0f, 0.0f,
+        -1.0f,  1.0f, 0.0f,
+        1.0f, -1.0f, 0.0f,
+        1.0f,  1.0f, 0.0f,
+    };
+
+    GLuint quad_vertexbuffer;
+    glGenBuffers(1, &quad_vertexbuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, quad_vertexbuffer);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(g_quad_vertex_buffer_data), g_quad_vertex_buffer_data, GL_STATIC_DRAW);
+
+    // Create and compile our GLSL program from the shaders
+    GLuint quad_programID = Shader::LoadShaders( src + "/shaders/Simple.vertex", src + "/shaders/FXAA.frag" );
+    GLuint texID = glGetUniformLocation(quad_programID, "renderedTexture");
+    GLuint timeID = glGetUniformLocation(quad_programID, "time");
+
+    // Render to the screen
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+#endif
 
 
 
-    // // RENDER TO TEXTURE
-    // // The framebuffer, which regroups 0, 1, or more textures, and 0 or 1 depth buffer.
-    // GLuint FramebufferName = 0;
-    // glGenFramebuffers(1, &FramebufferName);
-    // glBindFramebuffer(GL_FRAMEBUFFER, FramebufferName);
 
-    // // The texture we're going to render to
-    // GLuint renderedTexture;
-    // glGenTextures(1, &renderedTexture);
-
-    // // "Bind" the newly created texture : all future texture functions will modify this texture
-    // glBindTexture(GL_TEXTURE_2D, renderedTexture);
-
-    // // Give an empty image to OpenGL ( the last "0" )
-    // glTexImage2D(GL_TEXTURE_2D, 0,GL_RGB, 1024, 768, 0,GL_RGB, GL_UNSIGNED_BYTE, 0);
-
-    // // Poor filtering. Needed !
-    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-
-    // // Set "renderedTexture" as our colour attachement #0
-    // glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, renderedTexture, 0);
-
-    // // Set the list of draw buffers.
-    // GLenum DrawBuffers[1] = {GL_COLOR_ATTACHMENT0};
-    // glDrawBuffers(1, DrawBuffers); // "1" is the size of DrawBuffers
-
-    // // Always check that our framebuffer is ok
-    // if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-    // return false;
-
-    // // Render to our framebuffer
-    // glBindFramebuffer(GL_FRAMEBUFFER, FramebufferName);
-    // // glViewport(0,0,1024,768); // Render on the whole framebuffer, complete from the lower left corner to the upper right
-
-    // // The fullscreen quad's FBO
-    // GLuint quad_VertexArrayID;
-    // glGenVertexArrays(1, &quad_VertexArrayID);
-    // glBindVertexArray(quad_VertexArrayID);
-
-    // static const GLfloat g_quad_vertex_buffer_data[] = {
-    //     -1.0f, -1.0f, 0.0f,
-    //     1.0f, -1.0f, 0.0f,
-    //     -1.0f,  1.0f, 0.0f,
-    //     -1.0f,  1.0f, 0.0f,
-    //     1.0f, -1.0f, 0.0f,
-    //     1.0f,  1.0f, 0.0f,
-    // };
-
-    // GLuint quad_vertexbuffer;
-    // glGenBuffers(1, &quad_vertexbuffer);
-    // glBindBuffer(GL_ARRAY_BUFFER, quad_vertexbuffer);
-    // glBufferData(GL_ARRAY_BUFFER, sizeof(g_quad_vertex_buffer_data), g_quad_vertex_buffer_data, GL_STATIC_DRAW);
-
-    // // Create and compile our GLSL program from the shaders
     // GLuint quad_programID = Shader::LoadShaders( src + "/shaders/Passthrough.vertex", src + "/shaders/firstpass.frag" );
-    // GLuint texID = glGetUniformLocation(quad_programID, "renderedTexture");
-    // GLuint timeID = glGetUniformLocation(quad_programID, "time");
+    // Shader shader;
+    // shader.setShaderProgram(quad_programID);
 
-    // // Render to the screen
-    // glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-
+    Texture renderToText;
+    
 
 #ifdef ANTI_ALIASING
     AntiAliasing aa (WINDOW_WIDTH, WINDOW_HEIGHT);
@@ -217,6 +242,8 @@ int main(void)
     while (!glfwWindowShouldClose(window))
     {
         // renderer.clear();
+        // // Draws triangles
+        // renderer.draw(va, ibo, shader, false);
 
         // per-frame time logic
         // --------------------
@@ -224,7 +251,21 @@ int main(void)
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
 
+#ifdef MY_SHADER
         glm::mat4 viewMat = camera.mat(45.0f, 0.1f, 100.0f);
+
+        // Specifies shader
+        shader.bind();
+
+        // // Sets known shader uniform
+        // shader.setUniform4f("u_Color", 0.3f, 0.5f, 0.4f, 1.0f);
+
+        // Sets projection matrix uniform
+        shader.setUniformMat4f("u_Camera", viewMat);
+
+        // // Bidirectional Lighting ON (Cloth)
+        // shader.setUniform1i("is_Bidirectional", 1);
+#endif
 
         // render
         // ------
@@ -232,9 +273,6 @@ int main(void)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glBindVertexArray(cubeVAO);
         glDrawArrays(GL_TRIANGLES, 0, 36);     
-        
-        // // Draws triangles
-        // renderer.draw(va, ibo, shader, false);
 
         // Camera polling
         camera.inputs(window);

@@ -24,11 +24,15 @@ class Shader {
 public:
 	std::string fp;
 	std::map<std::string, unsigned int> cache;
+	Shader() = default;
 	Shader(const std::string& fp);
 	~Shader();
 
 	void bind();
 	void unbind();
+
+	// Set shader program id
+	void setShaderProgram(unsigned int id) { renderer_id = id; };
 
 	// Sets uniforms
 	void setUniform4f(const std::string& name, float v0, float v1, float f2, float f3);

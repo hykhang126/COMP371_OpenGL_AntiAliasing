@@ -5,6 +5,9 @@
 class Texture {
 
 public:
+	unsigned int renderer_id;
+
+	Texture() = default;
 	Texture(const std::string& fp);
 	~Texture();
 
@@ -14,7 +17,6 @@ public:
 	int getWidth();
 	int getHeight();
 private:
-	unsigned int renderer_id;
 	std::string fp;
 	unsigned char* textureBuffer;
 	int width, height, bitsPerPixel;
