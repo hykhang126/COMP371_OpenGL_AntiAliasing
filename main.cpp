@@ -101,8 +101,8 @@ int main(void)
     // Z-buffer
     glEnable(GL_DEPTH_TEST);
 
-    // Wide frame mode
-    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    // Wireframe mode
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
     std::string src = getCurrentPath();
 
