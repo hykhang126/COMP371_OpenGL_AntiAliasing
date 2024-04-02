@@ -24,7 +24,7 @@
 
 #define ANTI_ALIASING
 #define RENDER_TO_TEXTURE
-// #define MY_SHADER
+#define MY_SHADER
 
 
 static std::string getCurrentPath();
@@ -54,8 +54,8 @@ float triVertices[] = {
 // };
 
 // Settings
-int WINDOW_WIDTH = 500;
-int WINDOW_HEIGHT = 500;
+int WINDOW_WIDTH = 600;
+int WINDOW_HEIGHT = 600;
 
 // timing
 float deltaTime = 0.0f;
@@ -107,8 +107,12 @@ int main(void)
     std::string src = getCurrentPath();
 
 #ifdef MY_SHADER
-    // Creates shader off of input file
-    Shader shader(src + "/shaders/Basic.shader");
+    // // Creates shader off of input file
+    // Shader shader(src + "/shaders/Basic.shader");
+    // build and compile our shader program
+    // ------------------------------------
+    Shader shader( src + "/shaders/Simple.vertex", src + "/shaders/FXAA.frag" ); 
+    std::cout << "Done loading shader program" << std::endl;
 #endif
 
     // // Binds shader to program
@@ -215,13 +219,22 @@ int main(void)
     glBindBuffer(GL_ARRAY_BUFFER, quad_vertexbuffer);
     glBufferData(GL_ARRAY_BUFFER, sizeof(g_quad_vertex_buffer_data), g_quad_vertex_buffer_data, GL_STATIC_DRAW);
 
-    // Create and compile our GLSL program from the shaders
-    GLuint quad_programID = Shader::LoadShaders( src + "/shaders/Simple.vertex", src + "/shaders/FXAA.frag" );
-    GLuint texID = glGetUniformLocation(quad_programID, "renderedTexture");
-    GLuint timeID = glGetUniformLocation(quad_programID, "time");
+    #ifndef MY_SHADER
+        // Create and compile our GLSL program from the shaders
+        GLuint quad_programID = Shader::LoadShaders( src + "/shaders/Simple.vertex", src + "/shaders/FXAA.frag" );
+        GLuint texID = glGetUniformLocation(quad_programID, "renderedTexture");
+        GLuint timeID = glGetUniformLocation(quad_programID, "time");
+    #endif
 
     // Render to the screen
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+#endif
+
+
+
+#ifdef ANTI_ALIASING
+    AntiAliasing aa (WINDOW_WIDTH, WINDOW_HEIGHT);
+    // Do something
 #endif
 
 
@@ -231,14 +244,13 @@ int main(void)
     // Shader shader;
     // shader.setShaderProgram(quad_programID);
 
-    Texture renderToText;
-    
+    // Texture renderToText;
 
-#ifdef ANTI_ALIASING
-    AntiAliasing aa (WINDOW_WIDTH, WINDOW_HEIGHT);
-#endif
 
-    /* Loop until the user closes the window */
+
+    // ---------------------
+    // render loop
+    // ---------------------
     while (!glfwWindowShouldClose(window))
     {
         // renderer.clear();
@@ -252,6 +264,7 @@ int main(void)
         lastFrame = currentFrame;
 
 #ifdef MY_SHADER
+        // Generates view matrix
         glm::mat4 viewMat = camera.mat(45.0f, 0.1f, 100.0f);
 
         // Specifies shader
@@ -274,6 +287,9 @@ int main(void)
         glBindVertexArray(cubeVAO);
         glDrawArrays(GL_TRIANGLES, 0, 36);     
 
+        // Local input processing
+        processInput(window);
+
         // Camera polling
         camera.inputs(window);
         camera.inputs_AA(window);
@@ -289,6 +305,14 @@ int main(void)
     return 0;
 }
 
+
+
+
+
+/*--------------------------------------------------------------*/
+
+
+// Returns the current path of the file being compiled
 static std::string getCurrentPath() {
     // Get the path of the current source file being compiled
     std::filesystem::path currentFilePath(__FILE__);
@@ -324,4 +348,23 @@ void mouse_callback(GLFWwindow* window, double xposIn, double yposIn)
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
     // camera.ProcessMouseScroll(static_cast<float>(yoffset));
+}
+
+// process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
+// ---------------------------------------------------------------------------------------------------------
+void processInput(GLFWwindow *window)
+{
+    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+    {
+        std::cout << "Escape key pressed" << std::endl;
+    }
+}
+
+// glfw: whenever the window size changed (by OS or user resize) this callback function executes
+// ---------------------------------------------------------------------------------------------
+void framebuffer_size_callback(GLFWwindow* window, int width, int height)
+{
+    // make sure the viewport matches the new window dimensions; note that width and 
+    // height will be significantly larger than specified on retina displays.
+    glViewport(0, 0, width, height);
 }
