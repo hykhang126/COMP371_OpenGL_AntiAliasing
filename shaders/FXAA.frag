@@ -43,9 +43,12 @@ void main()
     {
         // FXAA computation
         if(fxaaMode)
+        {
             color = computeFxaa();  // Don't know if applying FXAA first is a good idea, especially with effects such as motion blur and DoF...
+        }
         else
-            color = texture(screenTexture, TexCoords).rgb;
+            color = vec3(0.0, 0.0, 1.0);
+            // color = texture(screenTexture, TexCoords).rgb;
 
         // Motion Blur computation
         if(motionBlurMode)

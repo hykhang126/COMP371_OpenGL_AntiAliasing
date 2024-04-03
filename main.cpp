@@ -28,10 +28,8 @@
 
 
 static std::string getCurrentPath();
-void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
-void processInput(GLFWwindow *window);
 
 struct Particle {
     glm::vec3 position;
@@ -56,6 +54,9 @@ float triVertices[] = {
 // Settings
 int WINDOW_WIDTH = 600;
 int WINDOW_HEIGHT = 600;
+
+int FBO_WIDTH = 15;
+int FBO_HEIGHT = 15;
 
 // timing
 float deltaTime = 0.0f;
@@ -89,6 +90,8 @@ int main(void)
 
     /* Make the window's context current */
     glfwMakeContextCurrent(window);
+    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+    glfwSetScrollCallback(window, scroll_callback);
 
     glfwSwapInterval(1);
 
@@ -101,8 +104,8 @@ int main(void)
     // Z-buffer
     glEnable(GL_DEPTH_TEST);
 
-    // Wireframe mode
-    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    // // Wireframe mode
+    // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
     std::string src = getCurrentPath();
 
@@ -111,8 +114,7 @@ int main(void)
     // Shader shader(src + "/shaders/Basic.shader");
     // build and compile our shader program
     // ------------------------------------
-    Shader shader( src + "/shaders/Simple.vertex", src + "/shaders/FXAA.frag" ); 
-    std::cout << "Done loading shader program" << std::endl;
+    Shader shader( src + "/shaders/Simple.vertex", src + "/shaders/Simple.frag" ); 
 #endif
 
     // // Binds shader to program
@@ -149,21 +151,6 @@ int main(void)
     // // Create renderer
     // Renderer renderer;
 
-    // setup cube VAO
-    unsigned int cubeVAO, cubeVBO;
-    glGenVertexArrays(1, &cubeVAO);
-    glGenBuffers(1, &cubeVBO);
-    glBindVertexArray(cubeVAO);
-    glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(triVertices), &triVertices, GL_STATIC_DRAW);
-    // position attribute
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);  
-    // texture coord attribute
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
-    glEnableVertexAttribArray(1);  
-
-
 #ifdef RENDER_TO_TEXTURE
     // RENDER TO TEXTURE
     // The framebuffer, which regroups 0, 1, or more textures, and 0 or 1 depth buffer.
@@ -179,7 +166,7 @@ int main(void)
     glBindTexture(GL_TEXTURE_2D, renderedTexture);
 
     // Give an empty image to OpenGL ( the last "0" )
-    glTexImage2D(GL_TEXTURE_2D, 0,GL_RGB, 15, 15, 0,GL_RGB, GL_UNSIGNED_BYTE, 0);
+    glTexImage2D(GL_TEXTURE_2D, 0,GL_RGB, FBO_WIDTH, FBO_HEIGHT, 0,GL_RGB, GL_UNSIGNED_BYTE, 0);
 
     // Poor filtering. Needed !
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -198,7 +185,7 @@ int main(void)
 
     // Render to our framebuffer
     glBindFramebuffer(GL_FRAMEBUFFER, FramebufferName);
-    // glViewport(0,0,1024,768); // Render on the whole framebuffer, complete from the lower left corner to the upper right
+    // glViewport(0,0,FBO_WIDTH,FBO_HEIGHT); // Render on the whole framebuffer, complete from the lower left corner to the upper right
 
     // The fullscreen quad's FBO
     GLuint quad_VertexArrayID;
@@ -224,11 +211,31 @@ int main(void)
         GLuint quad_programID = Shader::LoadShaders( src + "/shaders/Simple.vertex", src + "/shaders/FXAA.frag" );
         GLuint texID = glGetUniformLocation(quad_programID, "renderedTexture");
         GLuint timeID = glGetUniformLocation(quad_programID, "time");
+    #else
+        std::cout << "Using my shader with a rendered texture" << std::endl;
+        shader.setUniform1i("screenTexture", 0);
     #endif
-
+    
     // Render to the screen
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
 #endif
+
+    // setup cube VAO
+    unsigned int cubeVAO, cubeVBO;
+    glGenVertexArrays(1, &cubeVAO);
+    glGenBuffers(1, &cubeVBO);
+    glBindVertexArray(cubeVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(triVertices), &triVertices, GL_STATIC_DRAW);
+    // position attribute
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);  
+    // texture coord attribute
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+    glEnableVertexAttribArray(1);  
+
+
 
 
 
@@ -265,7 +272,7 @@ int main(void)
 
 #ifdef MY_SHADER
         // Generates view matrix
-        glm::mat4 viewMat = camera.mat(45.0f, 0.1f, 100.0f);
+        glm::mat4 viewMat = camera.mat(camera.Zoom, 0.1f, 100.0f);
 
         // Specifies shader
         shader.bind();
@@ -285,10 +292,7 @@ int main(void)
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glBindVertexArray(cubeVAO);
-        glDrawArrays(GL_TRIANGLES, 0, 36);     
-
-        // Local input processing
-        processInput(window);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
 
         // Camera polling
         camera.inputs(window);
@@ -321,45 +325,6 @@ static std::string getCurrentPath() {
     return currentFilePath.parent_path().string();
 }
 
-// glfw: whenever the mouse moves, this callback is called
-// -------------------------------------------------------
-void mouse_callback(GLFWwindow* window, double xposIn, double yposIn)
-{
-    float xpos = static_cast<float>(xposIn);
-    float ypos = static_cast<float>(yposIn);
-    if (firstMouse)
-    {
-        lastX = xpos;
-        lastY = ypos;
-        firstMouse = false;
-    }
-
-    float xoffset = xpos - lastX;
-    float yoffset = lastY - ypos; // reversed since y-coordinates go from bottom to top
-
-    lastX = xpos;
-    lastY = ypos;
-
-    // camera.ProcessMouseMovement(xoffset, yoffset);
-}
-
-// glfw: whenever the mouse scroll wheel scrolls, this callback is called
-// ----------------------------------------------------------------------
-void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
-{
-    // camera.ProcessMouseScroll(static_cast<float>(yoffset));
-}
-
-// process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
-// ---------------------------------------------------------------------------------------------------------
-void processInput(GLFWwindow *window)
-{
-    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-    {
-        std::cout << "Escape key pressed" << std::endl;
-    }
-}
-
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
 // ---------------------------------------------------------------------------------------------
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
@@ -367,4 +332,11 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
     // make sure the viewport matches the new window dimensions; note that width and 
     // height will be significantly larger than specified on retina displays.
     glViewport(0, 0, width, height);
+}
+
+// glfw: whenever the mouse scroll wheel scrolls, this callback is called
+// ----------------------------------------------------------------------
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
+{
+    camera.ProcessMouseScroll(static_cast<float>(yoffset));
 }

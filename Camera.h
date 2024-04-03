@@ -18,7 +18,7 @@ public:
 	
 	int width;
 	int height;
-	float cameraSpeed = 0.01f;
+	float cameraSpeed = 0.005f;
 	float cameraSensitivity = 0.5f;
 
 	Camera(int width, int height, glm::vec3 origin);
@@ -26,4 +26,17 @@ public:
 	glm::mat4 mat(float fov, float near, float far);
 	void inputs(GLFWwindow* window);
 	void inputs_AA(GLFWwindow* window);
+
+
+
+	float Zoom = 45.0f;
+	// processes input received from a mouse scroll-wheel event. Only requires input on the vertical wheel-axis
+    void ProcessMouseScroll(float yoffset)
+    {
+        Zoom -= (float)yoffset;
+        if (Zoom < 1.0f)
+            Zoom = 1.0f;
+        if (Zoom > 45.0f)
+            Zoom = 45.0f;
+    }
 };

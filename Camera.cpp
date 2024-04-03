@@ -31,11 +31,11 @@ void Camera::inputs(GLFWwindow* window)
 
     // Forward movement (W)
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-        origin += cameraSpeed * lookat;
+        origin += up * cameraSpeed;
     }
     // Backward movement (S)
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-        origin -= cameraSpeed * lookat;
+        origin -= up * cameraSpeed;
     }
     // Left movement (A)
     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
@@ -49,10 +49,10 @@ void Camera::inputs(GLFWwindow* window)
     // Additional logic for moving up and down
     if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS) {
         if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
-            origin += up * cameraSpeed; // Move Up
+            origin += cameraSpeed * lookat; // Zoom in
         }
         if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
-            origin -= up * cameraSpeed; // Move Down
+            origin -= cameraSpeed * lookat; // Zoom out
         }
     }
 
