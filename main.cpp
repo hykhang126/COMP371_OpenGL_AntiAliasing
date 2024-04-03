@@ -27,6 +27,7 @@
 #define MY_SHADER
 
 
+
 static std::string getCurrentPath();
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
@@ -63,10 +64,7 @@ float deltaTime = 0.0f;
 float lastFrame = 0.0f;
 
 // camera
-Camera camera(WINDOW_WIDTH *2, WINDOW_HEIGHT *2, glm::vec3(0.0f, 0.0f, 4.0f));
-float lastX = (float)WINDOW_WIDTH / 2.0;
-float lastY = (float)WINDOW_HEIGHT / 2.0;
-bool firstMouse = true;
+Camera camera(WINDOW_WIDTH, WINDOW_HEIGHT, glm::vec3(0.0f, 0.0f, 4.0f));
 
 int main(void)
 {
@@ -104,8 +102,8 @@ int main(void)
     // Z-buffer
     glEnable(GL_DEPTH_TEST);
 
-    // // Wireframe mode
-    // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    // Wireframe mode
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
     std::string src = getCurrentPath();
 
@@ -133,7 +131,7 @@ int main(void)
     // VArray va;
 
     // // Creates vertex buffer
-    // VBuffer vb(cubeVertices, sizeof(cubeVertices) * sizeof(float));
+    // VBuffer vb(triVertices, sizeof(triVertices) * sizeof(float));
 
     // // Creates vertex buffer layout
     // VBufferLayout layout;
@@ -146,15 +144,58 @@ int main(void)
     // va.addBuffer(vb, layout);
 
     // // Creates index buffer layout
-    // IndexBuffer ibo( cubeIndices, sizeof(cubeIndices));
+    // IndexBuffer ibo( triIndices, sizeof(triIndices));
 
     // // Create renderer
     // Renderer renderer;
 
+
+    // set up vertex data (and buffer(s)) and configure vertex attributes
+    // ------------------------------------------------------------------
+    // The fullscreen quad's FBO
+    float quadVertices[] = { // vertex attributes for a quad that fills the entire screen in Normalized Device Coordinates.
+        // positions   // texCoords
+        -1.0f,  1.0f,  0.0f, 1.0f,
+        -1.0f, -1.0f,  0.0f, 0.0f,
+         1.0f, -1.0f,  1.0f, 0.0f,
+
+        -1.0f,  1.0f,  0.0f, 1.0f,
+         1.0f, -1.0f,  1.0f, 0.0f,
+         1.0f,  1.0f,  1.0f, 1.0f
+    };
+    // setup tri VAO
+    GLuint triVAO, triVBO;
+    glGenVertexArrays(1, &triVAO);
+    glGenBuffers(1, &triVBO);
+    glBindVertexArray(triVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, triVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(triVertices), &triVertices, GL_STATIC_DRAW);
+    // position attribute
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);  
+    // texture coord attribute
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+    glEnableVertexAttribArray(1);  
+
+    // screen quad VAO
+    GLuint quadVAO, quadVBO;
+    glGenVertexArrays(1, &quadVAO);
+    glGenBuffers(1, &quadVBO);
+    glBindVertexArray(quadVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
+    // position attribute
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+    // texture coord attribute
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+
+    // framebuffer configuration
+    // -------------------------
 #ifdef RENDER_TO_TEXTURE
-    // RENDER TO TEXTURE
     // The framebuffer, which regroups 0, 1, or more textures, and 0 or 1 depth buffer.
-    GLuint FramebufferName = 0;
+    GLuint FramebufferName;
     glGenFramebuffers(1, &FramebufferName);
     glBindFramebuffer(GL_FRAMEBUFFER, FramebufferName);
 
@@ -173,38 +214,18 @@ int main(void)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
     // Set "renderedTexture" as our colour attachement #0
-    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, renderedTexture, 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, renderedTexture, 0);
 
-    // Set the list of draw buffers.
-    GLenum DrawBuffers[1] = {GL_COLOR_ATTACHMENT0};
-    glDrawBuffers(1, DrawBuffers); // "1" is the size of DrawBuffers
+    // // Set the list of draw buffers.
+    // GLenum DrawBuffers[1] = {GL_COLOR_ATTACHMENT0};
+    // glDrawBuffers(1, DrawBuffers); // "1" is the size of DrawBuffers
 
     // Always check that our framebuffer is ok
     if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
     return false;
 
     // Render to our framebuffer
-    glBindFramebuffer(GL_FRAMEBUFFER, FramebufferName);
-    // glViewport(0,0,FBO_WIDTH,FBO_HEIGHT); // Render on the whole framebuffer, complete from the lower left corner to the upper right
-
-    // The fullscreen quad's FBO
-    GLuint quad_VertexArrayID;
-    glGenVertexArrays(1, &quad_VertexArrayID);
-    glBindVertexArray(quad_VertexArrayID);
-
-    static const GLfloat g_quad_vertex_buffer_data[] = {
-        -1.0f, -1.0f, 0.0f,
-        1.0f, -1.0f, 0.0f,
-        -1.0f,  1.0f, 0.0f,
-        -1.0f,  1.0f, 0.0f,
-        1.0f, -1.0f, 0.0f,
-        1.0f,  1.0f, 0.0f,
-    };
-
-    GLuint quad_vertexbuffer;
-    glGenBuffers(1, &quad_vertexbuffer);
-    glBindBuffer(GL_ARRAY_BUFFER, quad_vertexbuffer);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(g_quad_vertex_buffer_data), g_quad_vertex_buffer_data, GL_STATIC_DRAW);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     #ifndef MY_SHADER
         // Create and compile our GLSL program from the shaders
@@ -212,29 +233,10 @@ int main(void)
         GLuint texID = glGetUniformLocation(quad_programID, "renderedTexture");
         GLuint timeID = glGetUniformLocation(quad_programID, "time");
     #else
-        std::cout << "Using my shader with a rendered texture" << std::endl;
-        shader.setUniform1i("screenTexture", 0);
+        // std::cout << "Using my shader with a rendered texture" << std::endl;
+        // shader.setUniform1i("screenTexture", 0);
     #endif
-    
-    // Render to the screen
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
 #endif
-
-    // setup cube VAO
-    unsigned int cubeVAO, cubeVBO;
-    glGenVertexArrays(1, &cubeVAO);
-    glGenBuffers(1, &cubeVBO);
-    glBindVertexArray(cubeVAO);
-    glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(triVertices), &triVertices, GL_STATIC_DRAW);
-    // position attribute
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);  
-    // texture coord attribute
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
-    glEnableVertexAttribArray(1);  
-
 
 
 
@@ -244,14 +246,6 @@ int main(void)
     // Do something
 #endif
 
-
-
-
-    // GLuint quad_programID = Shader::LoadShaders( src + "/shaders/Passthrough.vertex", src + "/shaders/firstpass.frag" );
-    // Shader shader;
-    // shader.setShaderProgram(quad_programID);
-
-    // Texture renderToText;
 
 
 
@@ -277,29 +271,47 @@ int main(void)
         // Specifies shader
         shader.bind();
 
-        // // Sets known shader uniform
-        // shader.setUniform4f("u_Color", 0.3f, 0.5f, 0.4f, 1.0f);
-
         // Sets projection matrix uniform
         shader.setUniformMat4f("u_Camera", viewMat);
-
-        // // Bidirectional Lighting ON (Cloth)
-        // shader.setUniform1i("is_Bidirectional", 1);
 #endif
 
         // render
         // ------
-        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        glBindVertexArray(cubeVAO);
-        glDrawArrays(GL_TRIANGLES, 0, 36);
 
+        // bind to framebuffer and draw scene as we normally would to color texture 
+        glBindFramebuffer(GL_FRAMEBUFFER, FramebufferName);
+        glEnable(GL_DEPTH_TEST); // enable depth testing (is disabled for rendering screen-space quad)
+
+        // make sure we clear the framebuffer's content
+        glClearColor(0.1f, 0.1f, 1.0f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        // render the triangle
+        glBindVertexArray(triVAO);
+        glDrawArrays(GL_TRIANGLES, 0, 3);
+
+
+        // now bind back to default framebuffer and draw a quad plane with the attached framebuffer color texture
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glDisable(GL_DEPTH_TEST); // disable depth test so screen-space quad isn't discarded due to depth test.
+        
+        // clear all relevant buffers
+        glClearColor(1.0f, 1.0f, 1.0f, 1.0f); // set clear color to white (not really necessary actually, since we won't be able to see behind the quad anyways)
+        glClear(GL_COLOR_BUFFER_BIT);
+
+        // glBlitFramebuffer(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, 
+        //                     GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+
+        glBindVertexArray(quadVAO);
+        glBindTexture(GL_TEXTURE_2D, renderedTexture);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+
+        // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
+        // -------------------------------------------------------------------------------
         // Camera polling
         camera.inputs(window);
         camera.inputs_AA(window);
 
-        // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
-        // -------------------------------------------------------------------------------
         glfwSwapBuffers(window);
         glfwPollEvents();
 
