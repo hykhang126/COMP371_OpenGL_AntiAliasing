@@ -14,7 +14,8 @@ public:
 	~Renderer();
 
 	// Renderer methods
-	void draw(VArray& va, IndexBuffer& ibo, Shader& shader, bool isSphere) const; // Not modifying
+	void drawWithIBO(VArray& va, IndexBuffer& ibo, Shader& shader, bool isSphere) const; // Not modifying
+	void draw(VArray& va, GLuint& ibo, Shader& shader, bool isSphere) const;
 	void clear();
 
 };

@@ -60,15 +60,15 @@ float triVertices[] = {
 int WINDOW_WIDTH = 900;
 int WINDOW_HEIGHT = 900;
 
-int FBO_WIDTH = 60;
-int FBO_HEIGHT = 60;
+int FBO_WIDTH = 100;
+int FBO_HEIGHT = 100;
 
 // timing
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
 
 // camera
-Camera camera(WINDOW_WIDTH, WINDOW_HEIGHT, glm::vec3(0.0f, 0.0f, 4.0f));
+Camera camera(WINDOW_WIDTH, WINDOW_HEIGHT, glm::vec3(2.0f, 0.0f, 4.0f));
 
 int main(void)
 {
@@ -117,10 +117,10 @@ int main(void)
 
     // build and compile our shader program
     // ------------------------------------
-    // // Shader for triangles
-    // Shader shader( src + "/shaders/Simple.vs", src + "/shaders/Simple.fs" );
-    // shader.bind();
-    // shader.setUniform1i("texture1", 0);
+    // Shader for triangles
+    Shader shader( src + "/shaders/Simple.vs", src + "/shaders/Simple.fs" );
+    shader.bind();
+    shader.setUniform1i("texture1", 0);
 
     // FXAA uniform sampler2D is called 'screenTexture' instead of 'texture1'
     Shader FXAA_Shader( src + "/shaders/Simple.vs", src + "/shaders/FXAA_2.fs" );
@@ -133,10 +133,10 @@ int main(void)
     uniform float u_minReduce;
     uniform float u_maxSpan;
     */
-    FXAA_Shader.setUniform1f("u_lumaThreshold", 0.0312f);
-    FXAA_Shader.setUniform1f("u_mulReduce", 0.5f);
-    FXAA_Shader.setUniform1f("u_minReduce", 0.5f);
-    FXAA_Shader.setUniform1f("u_maxSpan", 4.0f);
+    FXAA_Shader.setUniform1f("u_lumaThreshold", 0.125f);
+    FXAA_Shader.setUniform1f("u_mulReduce", (1.0f/8.0f));
+    FXAA_Shader.setUniform1f("u_minReduce", (1.0f/128.0f));
+    FXAA_Shader.setUniform1f("u_maxSpan", 1.0f);
 
     FXAA_Shader.setUniform1i("u_fxaaOn", true);
 
@@ -201,19 +201,39 @@ int main(void)
          1.0f,  1.0f,  1.0f, 1.0f
     };
     // setup tri VAO
-    GLuint triVAO, triVBO;
-    glGenVertexArrays(1, &triVAO);
-    glGenBuffers(1, &triVBO);
-    glBindVertexArray(triVAO);
+    /*
+    THE ORDER OF VAO: NO ANTI-ALIASING 0, MSAA 1, FXAA 2
+    */
+    int size = 3;
+    float offset = triVertices[4] - triVertices[0] + 0.5f;
 
-    glBindBuffer(GL_ARRAY_BUFFER, triVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(triVertices), &triVertices, GL_STATIC_DRAW);
-    // position attribute
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);  
-    // texture coord attribute
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
-    glEnableVertexAttribArray(1);  
+    GLuint triVAO[size], triVBO[size];
+    glGenVertexArrays(size, triVAO);
+    glGenBuffers(size, triVBO);
+
+    for (int i = 0; i < size; i++)
+    {
+        float newVertices[sizeof(triVertices)];
+        std::copy(triVertices, triVertices + sizeof(triVertices) / sizeof(float), newVertices);
+        for (int j = 0; j < sizeof(triVertices) / sizeof(float); j++)
+        {
+            if (j % 4 == 0)
+            {
+                newVertices[j] = triVertices[j] + i * offset;
+            }
+        }   
+
+        glBindVertexArray(triVAO[i]);
+
+        glBindBuffer(GL_ARRAY_BUFFER, triVBO[i]);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(newVertices), &newVertices, GL_STATIC_DRAW);
+        // position attribute
+        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+        glEnableVertexAttribArray(0);  
+        // texture coord attribute
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+        glEnableVertexAttribArray(1);  
+    }  
 
     // screen quad VAO
     GLuint quadVAO, quadVBO;
@@ -309,16 +329,7 @@ int main(void)
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
 
-#ifdef MY_SHADER
-        // Generates view matrix
-        glm::mat4 viewMat = camera.mat(camera.Zoom, 0.1f, 100.0f);
 
-        // Specifies shader
-        FXAA_Shader.bind();
-
-        // Sets projection matrix uniform
-        FXAA_Shader.setUniformMat4f("u_Camera", viewMat);
-#endif
 
         // render
         // ------
@@ -333,13 +344,35 @@ int main(void)
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        // render the triangle
-        glBindVertexArray(triVAO);
-        // binds texture to slot 0
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, triTexture);
-        // draw the triangle
-        glDrawArrays(GL_TRIANGLES, 0, 36);
+#ifdef MY_SHADER
+        // Generates view matrix
+        glm::mat4 viewMat = camera.mat(camera.Zoom, 0.1f, 100.0f);
+
+        // Specifies shader
+        FXAA_Shader.bind();
+
+        // Sets projection matrix uniform
+        FXAA_Shader.setUniformMat4f("u_Camera", viewMat);
+#endif
+
+        for (int i = 0; i < size; i++)
+        {
+            // render the triangle
+            glBindVertexArray(triVAO[i]);
+            // binds texture to slot 0
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, triTexture);
+            // draw the triangle
+            glDrawArrays(GL_TRIANGLES, 0, 3);
+        }
+
+        // // render the triangle
+        // glBindVertexArray(triVAO[0]);
+        // // binds texture to slot 0
+        // glActiveTexture(GL_TEXTURE0);
+        // glBindTexture(GL_TEXTURE_2D, triTexture);
+        // // draw the triangle
+        // glDrawArrays(GL_TRIANGLES, 0, 36);
 
 
 
