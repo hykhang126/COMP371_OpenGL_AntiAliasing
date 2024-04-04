@@ -1,7 +1,7 @@
 #version 400 core
+out vec4 colorOutput;
 
 in vec2 TexCoords;
-out vec4 colorOutput;
 
 float FXAA_SPAN_MAX = 8.0f;
 float FXAA_REDUCE_MUL = 1.0f/8.0f;
@@ -47,8 +47,8 @@ void main()
             color = computeFxaa();  // Don't know if applying FXAA first is a good idea, especially with effects such as motion blur and DoF...
         }
         else
-            color = vec3(0.0, 0.0, 1.0);
-            // color = texture(screenTexture, TexCoords).rgb;
+            // color = vec3(0.0, 0.0, 1.0);
+            color = texture(screenTexture, TexCoords).rgb;
 
         // Motion Blur computation
         if(motionBlurMode)

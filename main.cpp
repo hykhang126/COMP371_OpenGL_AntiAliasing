@@ -22,6 +22,9 @@
 #include "Camera.h"
 #include "AntiAliasing.h"
 
+// Vendor include
+#include "vendors/stb_image.h"
+
 #define ANTI_ALIASING
 #define RENDER_TO_TEXTURE
 #define MY_SHADER
@@ -31,6 +34,7 @@
 static std::string getCurrentPath();
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
+unsigned int loadTexture(std::string& path);
 
 struct Particle {
     glm::vec3 position;
@@ -53,11 +57,11 @@ float triVertices[] = {
 // };
 
 // Settings
-int WINDOW_WIDTH = 600;
-int WINDOW_HEIGHT = 600;
+int WINDOW_WIDTH = 900;
+int WINDOW_HEIGHT = 900;
 
-int FBO_WIDTH = 15;
-int FBO_HEIGHT = 15;
+int FBO_WIDTH = 60;
+int FBO_HEIGHT = 60;
 
 // timing
 float deltaTime = 0.0f;
@@ -95,25 +99,46 @@ int main(void)
 
     glewInit();
 
-    // Blending enabled
+    // // Blending enabled
     // glEnable(GL_BLEND);
     // glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     // Z-buffer
     glEnable(GL_DEPTH_TEST);
 
-    // Wireframe mode
-    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    // // Wireframe mode
+    // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
     std::string src = getCurrentPath();
 
 #ifdef MY_SHADER
     // // Creates shader off of input file
     // Shader shader(src + "/shaders/Basic.shader");
+
     // build and compile our shader program
     // ------------------------------------
-    Shader shader( src + "/shaders/Simple.vertex", src + "/shaders/Simple.frag" ); 
+    // Shader for triangles
+    Shader shader( src + "/shaders/Simple.vs", src + "/shaders/Simple.fs" );
+    shader.bind();
+    shader.setUniform1i("texture1", 0);
+
+    // FXAA uniform sampler2D is called 'screenTexture' instead of 'texture1'
+    Shader FXAA_Shader( src + "/shaders/Simple.vs", src + "/shaders/FXAA.fs" );
+    FXAA_Shader.bind();
+    FXAA_Shader.setUniform1i("screenTexture", 0);
+    // FXAA_Shader.setUniform1i("fxaaMode", true);
+
+    // Shader for screen
+    Shader screenShader( src + "/shaders/Screen.vs", src + "/shaders/Screen.fs" ); 
+    screenShader.bind();
+    screenShader.setUniform1i("screenTexture", 0);
 #endif
+
+    // load textures
+    // -------------
+    std::filesystem::path filePath = src + "/textures/basketball.png";
+    std::string path = filePath.string();
+    unsigned int triTexture = loadTexture(path);
 
     // // Binds shader to program
     // shader.bind();
@@ -168,6 +193,7 @@ int main(void)
     glGenVertexArrays(1, &triVAO);
     glGenBuffers(1, &triVBO);
     glBindVertexArray(triVAO);
+
     glBindBuffer(GL_ARRAY_BUFFER, triVBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(triVertices), &triVertices, GL_STATIC_DRAW);
     // position attribute
@@ -216,6 +242,13 @@ int main(void)
     // Set "renderedTexture" as our colour attachement #0
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, renderedTexture, 0);
 
+    // create a renderbuffer object for depth and stencil attachment (we won't be sampling these)
+    unsigned int rbo;
+    glGenRenderbuffers(1, &rbo);
+    glBindRenderbuffer(GL_RENDERBUFFER, rbo);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, FBO_WIDTH, FBO_HEIGHT); // use a single renderbuffer object for both a depth AND stencil buffer.
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo); // now actually attach it
+
     // // Set the list of draw buffers.
     // GLenum DrawBuffers[1] = {GL_COLOR_ATTACHMENT0};
     // glDrawBuffers(1, DrawBuffers); // "1" is the size of DrawBuffers
@@ -224,7 +257,7 @@ int main(void)
     if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
     return false;
 
-    // Render to our framebuffer
+    // Unbind our custom framebuffer and rebind it to the default framebuffer
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     #ifndef MY_SHADER
@@ -269,10 +302,10 @@ int main(void)
         glm::mat4 viewMat = camera.mat(camera.Zoom, 0.1f, 100.0f);
 
         // Specifies shader
-        shader.bind();
+        FXAA_Shader.bind();
 
         // Sets projection matrix uniform
-        shader.setUniformMat4f("u_Camera", viewMat);
+        FXAA_Shader.setUniformMat4f("u_Camera", viewMat);
 #endif
 
         // render
@@ -280,17 +313,31 @@ int main(void)
 
         // bind to framebuffer and draw scene as we normally would to color texture 
         glBindFramebuffer(GL_FRAMEBUFFER, FramebufferName);
+        glViewport(0, 0, FBO_WIDTH, FBO_HEIGHT); // don't forget to configure the viewport to the size of the texture
+        // glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
         glEnable(GL_DEPTH_TEST); // enable depth testing (is disabled for rendering screen-space quad)
 
         // make sure we clear the framebuffer's content
-        glClearColor(0.1f, 0.1f, 1.0f, 1.0f);
+        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // render the triangle
         glBindVertexArray(triVAO);
-        glDrawArrays(GL_TRIANGLES, 0, 3);
+        // binds texture to slot 0
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, triTexture);
+        // draw the triangle
+        glDrawArrays(GL_TRIANGLES, 0, 36);
 
 
+
+
+#ifdef MY_SHADER
+        // Specifies screen shader
+        screenShader.bind();
+#endif
+
+        glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
         // now bind back to default framebuffer and draw a quad plane with the attached framebuffer color texture
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
         glDisable(GL_DEPTH_TEST); // disable depth test so screen-space quad isn't discarded due to depth test.
@@ -299,8 +346,8 @@ int main(void)
         glClearColor(1.0f, 1.0f, 1.0f, 1.0f); // set clear color to white (not really necessary actually, since we won't be able to see behind the quad anyways)
         glClear(GL_COLOR_BUFFER_BIT);
 
-        // glBlitFramebuffer(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, 
-        //                     GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+        glBlitFramebuffer(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, 
+                            GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, GL_NEAREST);
 
         glBindVertexArray(quadVAO);
         glBindTexture(GL_TEXTURE_2D, renderedTexture);
@@ -351,4 +398,43 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
     camera.ProcessMouseScroll(static_cast<float>(yoffset));
+}
+
+// utility function for loading a 2D texture from file
+// ---------------------------------------------------
+unsigned int loadTexture(std::string& path)
+{
+    unsigned int textureID;
+    glGenTextures(1, &textureID);
+
+    int width, height, nrComponents;
+    unsigned char *data = stbi_load(path.c_str(), &width, &height, &nrComponents, 0);
+    if (data)
+    {
+        GLenum format;
+        if (nrComponents == 1)
+            format = GL_RED;
+        else if (nrComponents == 3)
+            format = GL_RGB;
+        else if (nrComponents == 4)
+            format = GL_RGBA;
+
+        glBindTexture(GL_TEXTURE_2D, textureID);
+        glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        stbi_image_free(data);
+    }
+    else
+    {
+        std::cout << "Texture failed to load at path: " << path << std::endl;
+        stbi_image_free(data);
+    }
+
+    return textureID;
 }
