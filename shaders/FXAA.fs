@@ -37,7 +37,7 @@ vec3 computeMotionBlur(vec3 colorVector);
 
 void main()
 {
-    vec3 color;
+    vec3 color = vec3(0.0, 0.0, 0.0);
 
     if(gBufferView == 1)
     {
@@ -45,51 +45,55 @@ void main()
         if(fxaaMode)
         {
             color = computeFxaa();  // Don't know if applying FXAA first is a good idea, especially with effects such as motion blur and DoF...
-        }
-        else
-            // color = vec3(0.0, 0.0, 1.0);
-            color = texture(screenTexture, TexCoords).rgb;
-
-        // Motion Blur computation
-        if(motionBlurMode)
-            color = computeMotionBlur(color);
-
-        // SAO computation
-        if(saoMode)
-        {
-            float sao = texture(sao, TexCoords).r;
-            color *= sao;
-        }
-
-        // Exposure computation
-        color *= computeSOBExposure(cameraAperture, cameraShutterSpeed, cameraISO);
-
-        // Tonemapping computation
-        if(tonemappingMode == 1)
-        {
-            color = ReinhardTM(color);
-            colorOutput = vec4(colorSRGB(color), 1.0f);
-        }
-        else if(tonemappingMode == 2)
-        {
-            color = FilmicTM(color);
             colorOutput = vec4(color, 1.0f);
         }
-        else if(tonemappingMode == 3)
+        else
         {
-            float W = 11.2f;
-            color = UnchartedTM(color);
-            vec3 whiteScale = 1.0f / UnchartedTM(vec3(W));
-
-            color *= whiteScale;
-            colorOutput = vec4(colorSRGB(color), 1.0f);
+            colorOutput = vec4(1.0, 0.0, 0.0, 1.0f);
+            // color = texture(screenTexture, TexCoords).rgb;
         }
+
+        // // Motion Blur computation
+        // if(motionBlurMode)
+        //     color = computeMotionBlur(color);
+
+        // // SAO computation
+        // if(saoMode)
+        // {
+        //     float sao = texture(sao, TexCoords).r;
+        //     color *= sao;
+        // }
+
+        // // Exposure computation
+        // color *= computeSOBExposure(cameraAperture, cameraShutterSpeed, cameraISO);
+
+        // // Tonemapping computation
+        // if(tonemappingMode == 1)
+        // {
+        //     color = ReinhardTM(color);
+        //     colorOutput = vec4(colorSRGB(color), 1.0f);
+        // }
+        // else if(tonemappingMode == 2)
+        // {
+        //     color = FilmicTM(color);
+        //     colorOutput = vec4(color, 1.0f);
+        // }
+        // else if(tonemappingMode == 3)
+        // {
+        //     float W = 11.2f;
+        //     color = UnchartedTM(color);
+        //     vec3 whiteScale = 1.0f / UnchartedTM(vec3(W));
+
+        //     color *= whiteScale;
+        //     colorOutput = vec4(colorSRGB(color), 1.0f);
+        // }
+
+        // colorOutput = vec4(color, 1.0f);
     }
 
     else    // No tonemapping or linear/sRGB conversion if we want to visualize the different buffers
     {
-        color = texture(screenTexture, TexCoords).rgb;
-        colorOutput = vec4(color, 1.0f);
+        colorOutput = vec4(0.0, 0.0, 0.0, 1.0);
     }
 }
 

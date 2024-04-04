@@ -117,16 +117,28 @@ int main(void)
 
     // build and compile our shader program
     // ------------------------------------
-    // Shader for triangles
-    Shader shader( src + "/shaders/Simple.vs", src + "/shaders/Simple.fs" );
-    shader.bind();
-    shader.setUniform1i("texture1", 0);
+    // // Shader for triangles
+    // Shader shader( src + "/shaders/Simple.vs", src + "/shaders/Simple.fs" );
+    // shader.bind();
+    // shader.setUniform1i("texture1", 0);
 
     // FXAA uniform sampler2D is called 'screenTexture' instead of 'texture1'
-    Shader FXAA_Shader( src + "/shaders/Simple.vs", src + "/shaders/FXAA.fs" );
+    Shader FXAA_Shader( src + "/shaders/Simple.vs", src + "/shaders/FXAA_2.fs" );
     FXAA_Shader.bind();
-    FXAA_Shader.setUniform1i("screenTexture", 0);
-    // FXAA_Shader.setUniform1i("fxaaMode", true);
+    FXAA_Shader.setUniform1i("u_colorTexture", 0);
+    FXAA_Shader.setUniform2f("u_texelStep", 1.0f / FBO_WIDTH, 1.0f / FBO_HEIGHT);
+    /*
+    uniform float u_lumaThreshold;
+    uniform float u_mulReduce;
+    uniform float u_minReduce;
+    uniform float u_maxSpan;
+    */
+    FXAA_Shader.setUniform1f("u_lumaThreshold", 0.0312f);
+    FXAA_Shader.setUniform1f("u_mulReduce", 0.5f);
+    FXAA_Shader.setUniform1f("u_minReduce", 0.5f);
+    FXAA_Shader.setUniform1f("u_maxSpan", 4.0f);
+
+    FXAA_Shader.setUniform1i("u_fxaaOn", true);
 
     // Shader for screen
     Shader screenShader( src + "/shaders/Screen.vs", src + "/shaders/Screen.fs" ); 

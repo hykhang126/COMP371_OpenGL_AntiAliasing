@@ -153,6 +153,11 @@ void Shader::setUniformMat4f(const std::string& name, glm::mat4& projection)
     glUniformMatrix4fv(getUniformLocation(name), 1, GL_TRUE, &projection[0][0]);
 }
 
+void Shader::setUniform2f(const std::string& name, float v0, float v1) 
+{
+    glUniform2f(getUniformLocation(name), v0, v1);
+}
+
 // Getters
 int Shader::getUniformLocation(const std::string& name)
 {
