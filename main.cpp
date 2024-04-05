@@ -53,6 +53,18 @@ float quadVertices[] = { // vertex attributes for a quad that fills the entire s
     -1.0f,  1.0f,  1.0f, 1.0f
 };
 
+// The low res quad's FBO
+float lr_quadVertices[] = { // vertex attributes for a quad that fills the entire screen in Normalized Device Coordinates.
+    // positions   // texCoords
+    -1.0f,  1.0f,  0.0f, 1.0f,
+    -1.0f, -1.0f,  0.0f, 0.0f,
+    1.0f, -1.0f,  1.0f, 0.0f,
+
+    -1.0f,  1.0f,  0.0f, 1.0f,
+    1.0f, -1.0f,  1.0f, 0.0f,
+    1.0f,  1.0f,  1.0f, 1.0f
+};
+
 float triVertices[] = {
     // positions      // texture Coords    
     -0.5f, -0.0f,       0.5f, 0.0f, // middle left
@@ -182,6 +194,9 @@ int main(void)
     std::filesystem::path filePath = src + "/textures/basketball.png";
     std::string path = filePath.string();
     unsigned int triTexture = loadTexture(path);
+    filePath = src + "/textures/quad.png";
+    path = filePath.string();
+    unsigned int quadTexture = loadTexture(path);
 
 
     // set up vertex data (and buffer(s)) and configure vertex attributes
@@ -221,7 +236,23 @@ int main(void)
         glEnableVertexAttribArray(1);  
     }  
 
-    // setup quad VAO
+    // Set up the low res quad VAO
+    GLuint lr_quadVAO, lr_quadVBO;
+    glGenVertexArrays(1, &lr_quadVAO);
+    glGenBuffers(1, &lr_quadVBO);
+    glBindVertexArray(lr_quadVAO);
+
+    glBindBuffer(GL_ARRAY_BUFFER, lr_quadVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(lr_quadVertices), &lr_quadVertices, GL_STATIC_DRAW);
+    // position attribute
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);  
+    // texture coord attribute
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+    glEnableVertexAttribArray(1);  
+
+
+    // setup screen quad VAO
     offset = quadVertices[8] - quadVertices[0] + 0.1f;
     float xAdjust = 0.1f;
 
@@ -256,6 +287,7 @@ int main(void)
         glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
         glEnableVertexAttribArray(1);  
     } 
+
 
     // Anti aliasing configuration by returning framebuffer ref.
     // -------------------------
@@ -342,13 +374,11 @@ int main(void)
                 glActiveTexture(GL_TEXTURE0);
                 glBindTexture(GL_TEXTURE_2D, triTexture);
 
-#ifdef MSAA_FXAA
                 // 2. now blit multisampled buffer(s) to normal colorbuffer of intermediate FBO. Image is stored in screenTexture
                 glBindFramebuffer(GL_READ_FRAMEBUFFER, MSAAframebuffer);
                 glBindFramebuffer(GL_DRAW_FRAMEBUFFER, intermediateFBO);
                 glBlitFramebuffer(0, 0, FBO_WIDTH, FBO_HEIGHT, 
                                 0, 0, FBO_WIDTH, FBO_HEIGHT, GL_COLOR_BUFFER_BIT, GL_NEAREST);
-#endif
                 glDrawArrays(GL_TRIANGLES, 0, 3);
             }
             if (i == 2)
@@ -363,6 +393,15 @@ int main(void)
                 glBindTexture(GL_TEXTURE_2D, triTexture);
 
                 glDrawArrays(GL_TRIANGLES, 0, 3);
+            }
+
+            if (i != 1)
+            {
+                // DRAW QUAD
+                glBindVertexArray(lr_quadVAO);
+                glActiveTexture(GL_TEXTURE0);
+                glBindTexture(GL_TEXTURE_2D, quadTexture);
+                glDrawArrays(GL_TRIANGLES, 0, 6);
             }
 
             // RESET
