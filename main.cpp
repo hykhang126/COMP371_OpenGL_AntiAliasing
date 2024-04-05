@@ -310,13 +310,13 @@ int main(void)
     glGenFramebuffers(1, &intermediateFBO);
     glBindFramebuffer(GL_FRAMEBUFFER, intermediateFBO);
     // create a color attachment texture
-    unsigned int screenTexture;
-    glGenTextures(1, &screenTexture);
-    glBindTexture(GL_TEXTURE_2D, screenTexture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, FBO_WIDTH, FBO_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+    unsigned int MSAATexture;
+    glGenTextures(1, &MSAATexture);
+    glBindTexture(GL_TEXTURE_2D, MSAATexture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, WINDOW_WIDTH, WINDOW_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, screenTexture, 0);	// we only need a color buffer
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, MSAATexture, 0);	// we only need a color buffer
 
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
         std::cout << "ERROR::FRAMEBUFFER:: Intermediate framebuffer is not complete!" << std::endl;
@@ -361,39 +361,43 @@ int main(void)
                 // binds texture to slot 0
                 glActiveTexture(GL_TEXTURE0);
                 glBindTexture(GL_TEXTURE_2D, triTexture);
+
+                // draw the triangle
+                glDrawArrays(GL_TRIANGLES, 0, 3);
             }
             if (i == 1)
             {
                 MSAA_shader.bind();
                 MSAA_shader.setUniformMat4f("u_Camera", viewMat);
-                aa.applyFramebuffer(MSAAframebuffer, FBO_WIDTH, FBO_HEIGHT, clearColorBlack, true);
+                aa.applyFramebuffer(MSAAframebuffer, FBO_WIDTH, FBO_HEIGHT, clearColorBlue, true);
 
                 glBindVertexArray(triVAO[0]);
 
                 glActiveTexture(GL_TEXTURE0);
                 glBindTexture(GL_TEXTURE_2D, triTexture);
 
-// #ifdef MSAA_FXAA
-//                 // 2. now blit multisampled buffer(s) to normal colorbuffer of intermediate FBO. Image is stored in screenTexture
-//                 glBindFramebuffer(GL_READ_FRAMEBUFFER, MSAAframebuffer);
-//                 glBindFramebuffer(GL_DRAW_FRAMEBUFFER, intermediateFBO);
-//                 glBlitFramebuffer(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, GL_COLOR_BUFFER_BIT, GL_NEAREST);
-// #endif
+#ifdef MSAA_FXAA
+                // 2. now blit multisampled buffer(s) to normal colorbuffer of intermediate FBO. Image is stored in screenTexture
+                glBindFramebuffer(GL_READ_FRAMEBUFFER, MSAAframebuffer);
+                glBindFramebuffer(GL_DRAW_FRAMEBUFFER, intermediateFBO);
+                glBlitFramebuffer(0, 0, FBO_WIDTH, FBO_HEIGHT, 
+                                0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+#endif
+                glDrawArrays(GL_TRIANGLES, 0, 3);
             }
             if (i == 2)
             {
                 FXAA_Shader.bind();
                 FXAA_Shader.setUniformMat4f("u_Camera", viewMat);
-                aa.applyFramebuffer(FXAAframebuffer, FBO_WIDTH, FBO_HEIGHT, clearColorBlue, true);
+                aa.applyFramebuffer(FXAAframebuffer, FBO_WIDTH, FBO_HEIGHT, clearColorRed, true);
 
                 glBindVertexArray(triVAO[0]);
 
                 glActiveTexture(GL_TEXTURE0);
                 glBindTexture(GL_TEXTURE_2D, triTexture);
-            }
 
-            // draw the triangle
-            glDrawArrays(GL_TRIANGLES, 0, 3);
+                glDrawArrays(GL_TRIANGLES, 0, 3);
+            }
 
             // RESET
             glBindVertexArray(0);
@@ -410,20 +414,23 @@ int main(void)
         for (int i = 0; i < size; i++)
         {
             glBindVertexArray(quadVAO[i]);
+            glActiveTexture(GL_TEXTURE0);
             if (i == 0)
             {
                 glBindTexture(GL_TEXTURE_2D, aa.renderedTexture);	// use the color attachment texture as the texture of the quad plane
+                glDrawArrays(GL_TRIANGLES, 0, 6);
             }
             else if (i == 1)
             {
-                glBindTexture(GL_TEXTURE_2D, aa.textureColorBufferMultiSampled);	// use the color attachment texture as the texture of the quad plane
+                glBindTexture(GL_TEXTURE_2D, MSAATexture);	// use the color attachment texture as the texture of the quad plane
+                glDrawArrays(GL_TRIANGLES, 0, 6);
             }
             else if (i == 2)
             {
                 glBindTexture(GL_TEXTURE_2D, aa.FXAATexture);	// use the color attachment texture as the texture of the quad plane
+                glDrawArrays(GL_TRIANGLES, 0, 6);
             }
 
-            glDrawArrays(GL_TRIANGLES, 0, 6);
         }
 
 
@@ -442,6 +449,21 @@ int main(void)
     glfwTerminate();
     return 0;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
