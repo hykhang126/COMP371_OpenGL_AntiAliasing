@@ -72,8 +72,8 @@ float triVertices[] = {
 int WINDOW_WIDTH = 900;
 int WINDOW_HEIGHT = 900;
 
-int FBO_WIDTH = 50;
-int FBO_HEIGHT = 50;
+int FBO_WIDTH = 15;
+int FBO_HEIGHT = 15;
 
 // timing
 float deltaTime = 0.0f;
@@ -183,40 +183,6 @@ int main(void)
     std::string path = filePath.string();
     unsigned int triTexture = loadTexture(path);
 
-    // // Binds shader to program
-    // shader.bind();
-
-    // glm::mat4 viewMat = camera.mat(45.0f, 0.1f, 100.0f);
-
-    // // Sets projection matrix uniform
-    // shader.setUniformMat4f("u_Camera", viewMat);
-
-    // // Creates texture buffer and binds to slot 0
-    // Texture texture(src + "/textures/basketball.png");
-    // texture.bind(0);
-
-    // // Creates vertex array
-    // VArray va;
-
-    // // Creates vertex buffer
-    // VBuffer vb(triVertices, sizeof(triVertices) * sizeof(float));
-
-    // // Creates vertex buffer layout
-    // VBufferLayout layout;
-
-    // // Specifies new layout and adds vertex coordinates
-    // layout.add<float>(2);
-
-    // // Attaches vertex buffer and vertex buffer layout
-    // // to the vertex array
-    // va.addBuffer(vb, layout);
-
-    // // Creates index buffer layout
-    // IndexBuffer ibo( triIndices, sizeof(triIndices));
-
-    // // Create renderer
-    // Renderer renderer;
-
 
     // set up vertex data (and buffer(s)) and configure vertex attributes
     // ------------------------------------------------------------------
@@ -309,11 +275,11 @@ int main(void)
     unsigned int intermediateFBO;
     glGenFramebuffers(1, &intermediateFBO);
     glBindFramebuffer(GL_FRAMEBUFFER, intermediateFBO);
-    // create a color attachment texture
+    // create a color attachment texture in lower res context
     unsigned int MSAATexture;
     glGenTextures(1, &MSAATexture);
     glBindTexture(GL_TEXTURE_2D, MSAATexture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, WINDOW_WIDTH, WINDOW_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, FBO_WIDTH, FBO_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, MSAATexture, 0);	// we only need a color buffer
@@ -369,7 +335,7 @@ int main(void)
             {
                 MSAA_shader.bind();
                 MSAA_shader.setUniformMat4f("u_Camera", viewMat);
-                aa.applyFramebuffer(MSAAframebuffer, FBO_WIDTH, FBO_HEIGHT, clearColorBlue, true);
+                aa.applyFramebuffer(MSAAframebuffer, FBO_WIDTH, FBO_HEIGHT, clearColorWhite, true);
 
                 glBindVertexArray(triVAO[0]);
 
@@ -381,7 +347,7 @@ int main(void)
                 glBindFramebuffer(GL_READ_FRAMEBUFFER, MSAAframebuffer);
                 glBindFramebuffer(GL_DRAW_FRAMEBUFFER, intermediateFBO);
                 glBlitFramebuffer(0, 0, FBO_WIDTH, FBO_HEIGHT, 
-                                0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+                                0, 0, FBO_WIDTH, FBO_HEIGHT, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 #endif
                 glDrawArrays(GL_TRIANGLES, 0, 3);
             }
@@ -389,7 +355,7 @@ int main(void)
             {
                 FXAA_Shader.bind();
                 FXAA_Shader.setUniformMat4f("u_Camera", viewMat);
-                aa.applyFramebuffer(FXAAframebuffer, FBO_WIDTH, FBO_HEIGHT, clearColorRed, true);
+                aa.applyFramebuffer(FXAAframebuffer, FBO_WIDTH, FBO_HEIGHT, clearColorWhite, true);
 
                 glBindVertexArray(triVAO[0]);
 
@@ -410,7 +376,6 @@ int main(void)
         GLuint DefaultFramebuffer = 0;
         aa.applyFramebuffer(DefaultFramebuffer, WINDOW_WIDTH, WINDOW_HEIGHT, clearColorBlack, false);
 
-        // TODO: Make it so that each loop render the quad with the corresponding framebuffer 
         for (int i = 0; i < size; i++)
         {
             glBindVertexArray(quadVAO[i]);
