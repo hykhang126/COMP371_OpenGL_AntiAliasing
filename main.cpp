@@ -26,7 +26,6 @@
 #include "vendors/stb_image.h"
 
 #define ANTI_ALIASING
-#define RENDER_TO_TEXTURE
 #define MY_SHADER
 #define MSAA_FXAA
 
@@ -40,6 +39,18 @@ unsigned int loadTexture(std::string& path);
 struct Particle {
     glm::vec3 position;
     glm::vec2 textureCoordinates;
+};
+
+// The fullscreen quad's FBO
+float quadVertices[] = { // vertex attributes for a quad that fills the entire screen in Normalized Device Coordinates.
+    // positions   // texCoords
+    -0.5f,  0.5f,  0.0f, 1.0f,
+    -0.5f, -0.5f,  0.0f, 0.0f,
+    0.5f, -0.5f,  1.0f, 0.0f,
+
+    -0.5f,  0.5f,  0.0f, 1.0f,
+    0.5f, -0.5f,  1.0f, 0.0f,
+    0.5f,  0.5f,  1.0f, 1.0f
 };
 
 float triVertices[] = {
@@ -69,7 +80,15 @@ float deltaTime = 0.0f;
 float lastFrame = 0.0f;
 
 // camera
-Camera camera(WINDOW_WIDTH, WINDOW_HEIGHT, glm::vec3(1.5f, 0.0f, 4.0f));
+Camera camera(WINDOW_WIDTH, WINDOW_HEIGHT, glm::vec3(0.0f, 0.0f, 4.0f));
+
+// Path to the source directory
+std::string src = getCurrentPath();
+
+// Clears the screen and sets the background color
+float clearColorBlack[4] = {0.1f, 0.1f, 0.1f, 1.0f};
+float clearColorWhite[4] = {1.0f, 1.0f, 1.0f, 1.0f};
+float clearColorBlue[4] = {0.0f, 0.0f, 1.0f, 1.0f};
 
 int main(void)
 {
@@ -117,8 +136,6 @@ int main(void)
     // // Wireframe mode
     // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
-    std::string src = getCurrentPath();
-
 #ifdef MY_SHADER
     // // Creates shader off of input file
     // Shader shader(src + "/shaders/Basic.shader");
@@ -130,7 +147,7 @@ int main(void)
     shader.bind();
     shader.setUniform1i("screenTexture", 0);
 
-    // FXAA uniform sampler2D is called 'screenTexture' instead of 'texture1'
+    // Shader for FXAA
     Shader FXAA_Shader( src + "/shaders/Simple.vs", src + "/shaders/FXAA_2.fs" );
     FXAA_Shader.bind();
     FXAA_Shader.setUniform1i("u_colorTexture", 0);
@@ -197,17 +214,6 @@ int main(void)
 
     // set up vertex data (and buffer(s)) and configure vertex attributes
     // ------------------------------------------------------------------
-    // The fullscreen quad's FBO
-    float quadVertices[] = { // vertex attributes for a quad that fills the entire screen in Normalized Device Coordinates.
-        // positions   // texCoords
-        -1.0f,  1.0f,  0.0f, 1.0f,
-        -1.0f, -1.0f,  0.0f, 0.0f,
-         1.0f, -1.0f,  1.0f, 0.0f,
-
-        -1.0f,  1.0f,  0.0f, 1.0f,
-         1.0f, -1.0f,  1.0f, 0.0f,
-         1.0f,  1.0f,  1.0f, 1.0f
-    };
     // setup tri VAO
     /*
     THE ORDER OF VAO: NO ANTI-ALIASING 0, MSAA 1, FXAA 2
@@ -257,75 +263,43 @@ int main(void)
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
 
-    // framebuffer configuration
-    // -------------------------
-#ifdef RENDER_TO_TEXTURE
-    // // The framebuffer, which regroups 0, 1, or more textures, and 0 or 1 depth buffer.
-    // GLuint FramebufferName;
-    // glGenFramebuffers(1, &FramebufferName);
-    // glBindFramebuffer(GL_FRAMEBUFFER, FramebufferName);
 
-    // // The texture we're going to render to
-    // GLuint renderedTexture;
-    // glGenTextures(1, &renderedTexture);
+    // GLuint quadVAO[size], quadVBO[size];
+    // glGenVertexArrays(size, quadVAO);
+    // glGenBuffers(size, quadVBO);
 
-    // // "Bind" the newly created texture : all future texture functions will modify this texture
-    // glBindTexture(GL_TEXTURE_2D, renderedTexture);
-    // // glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, renderedTexture);
-
-    // // Give an empty image to OpenGL ( the last "0" )
-    // glTexImage2D(GL_TEXTURE_2D, 0,GL_RGB, FBO_WIDTH, FBO_HEIGHT, 0,GL_RGB, GL_UNSIGNED_BYTE, 0);
-    // // glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 4, GL_RGB, FBO_WIDTH, FBO_HEIGHT, GL_TRUE);
-    // // glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
-
-
-    // // Poor filtering. Needed !
-    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-
-    // // Set "renderedTexture" as our colour attachement #0
-    // glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, renderedTexture, 0);
-    // // glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, renderedTexture, 0);
-
-
-    // // create a renderbuffer object for depth and stencil attachment (we won't be sampling these)
-    // unsigned int rbo;
-    // glGenRenderbuffers(1, &rbo);
-    // glBindRenderbuffer(GL_RENDERBUFFER, rbo);
-    // glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, FBO_WIDTH, FBO_HEIGHT); // use a single renderbuffer object for both a depth AND stencil buffer.
-    // // glRenderbufferStorageMultisample(GL_RENDERBUFFER, 4, GL_DEPTH24_STENCIL8, FBO_WIDTH, FBO_HEIGHT);
-    // glBindRenderbuffer(GL_RENDERBUFFER, 0);
-    // glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo); // now actually attach it
-
-    // // // Set the list of draw buffers.
-    // // GLenum DrawBuffers[1] = {GL_COLOR_ATTACHMENT0};
-    // // glDrawBuffers(1, DrawBuffers); // "1" is the size of DrawBuffers
-
-    // // Always check that our framebuffer is ok
-    // if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+    // for (int i = 0; i < size; i++)
     // {
-    //     std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
-    //     return false;
-    // }
+    //     float newQuadVertices[sizeof(quadVertices)];
+    //     std::copy(quadVertices, quadVertices + sizeof(quadVertices) / sizeof(float), newQuadVertices);
+    //     for (int j = 0; j < sizeof(quadVertices) / sizeof(float); j++)
+    //     {
 
-    // // Unbind our custom framebuffer and rebind it to the default framebuffer
-    // glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    //     }   
 
-    #ifndef MY_SHADER
-        // Create and compile our GLSL program from the shaders
-        GLuint quad_programID = Shader::LoadShaders( src + "/shaders/Simple.vertex", src + "/shaders/FXAA.frag" );
-        GLuint texID = glGetUniformLocation(quad_programID, "renderedTexture");
-        GLuint timeID = glGetUniformLocation(quad_programID, "time");
-    #endif
-#endif
+    //     glBindVertexArray(quadVAO[i]);
 
+    //     glBindBuffer(GL_ARRAY_BUFFER, quadVBO[i]);
+    //     glBufferData(GL_ARRAY_BUFFER, sizeof(newQuadVertices), &newQuadVertices, GL_STATIC_DRAW);
+    //     // position attribute
+    //     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+    //     glEnableVertexAttribArray(0);  
+    //     // texture coord attribute
+    //     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+    //     glEnableVertexAttribArray(1);  
+    // } 
+
+    // Anti aliasing configuration by returning framebuffer ref.
+    // -------------------------
 #ifdef ANTI_ALIASING
     AntiAliasing aa (WINDOW_WIDTH, WINDOW_HEIGHT);
 
     // None setup
-    GLuint FramebufferName = aa.setupNone(FBO_WIDTH, FBO_HEIGHT);
+    GLuint NoAAframebuffer = aa.setupNone(FBO_WIDTH, FBO_HEIGHT);
     // MSAA setup
     GLuint MSAAframebuffer = aa.setupMSAA(FBO_WIDTH, FBO_HEIGHT);
+    // FXAA setup
+    GLuint FXAAframebuffer = aa.setupFXAA(FBO_WIDTH, FBO_HEIGHT);
 #endif
 
 #ifdef MSAA_FXAA
@@ -369,31 +343,35 @@ int main(void)
 
 
         // render
-        // ------
-
-        // bind to framebuffer and draw scene as we normally would to color texture 
-        glBindFramebuffer(GL_FRAMEBUFFER, FramebufferName);
-        glViewport(0, 0, FBO_WIDTH, FBO_HEIGHT); // don't forget to configure the viewport to the size of the texture
-        // glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
-        glEnable(GL_DEPTH_TEST); // enable depth testing (is disabled for rendering screen-space quad)
-
-        // make sure we clear the framebuffer's content
-        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-#ifdef MY_SHADER
+        // -----------------------------------------
         // Generates view matrix
         glm::mat4 viewMat = camera.mat(camera.Zoom, 0.1f, 100.0f);
 
-        // Specifies shader
-        shader.bind();
-
-        // Sets projection matrix uniform
-        shader.setUniformMat4f("u_Camera", viewMat);
-#endif
-
         for (int i = 0; i < size; i++)
         {
+            // 1. None 2. MSAA 3. FXAA
+            if (i == 0)
+            {
+                // Specifies shader
+                shader.bind();
+                // Sets projection matrix uniform
+                shader.setUniformMat4f("u_Camera", viewMat);
+                // Bind to the corresponding framebuffer
+                aa.applyFramebuffer(NoAAframebuffer, FBO_WIDTH, FBO_HEIGHT, clearColorWhite, true);
+            }
+            if (i == 1)
+            {
+                shader.bind();
+                shader.setUniformMat4f("u_Camera", viewMat);
+                // aa.applyFramebuffer(MSAAframebuffer, FBO_WIDTH, FBO_HEIGHT, true);
+            }
+            if (i == 2)
+            {
+                FXAA_Shader.bind();
+                FXAA_Shader.setUniformMat4f("u_Camera", viewMat);
+                // aa.applyFramebuffer(FXAAframebuffer, FBO_WIDTH, FBO_HEIGHT, true);
+            }
+
             // render the triangle
             glBindVertexArray(triVAO[i]);
             // binds texture to slot 0
@@ -401,6 +379,34 @@ int main(void)
             glBindTexture(GL_TEXTURE_2D, triTexture);
             // draw the triangle
             glDrawArrays(GL_TRIANGLES, 0, 3);
+        }
+
+
+            
+#ifdef MSAA_FXAA
+        // 2. now blit multisampled buffer(s) to normal colorbuffer of intermediate FBO. Image is stored in screenTexture
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, NoAAframebuffer);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, intermediateFBO);
+        glBlitFramebuffer(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+#endif
+
+        // Specifies screen shader
+        screenShader.bind();
+
+        // 3. now render quad with scene's visuals as its texture image
+        GLuint DefaultFramebuffer = 0;
+        aa.applyFramebuffer(DefaultFramebuffer, WINDOW_WIDTH, WINDOW_HEIGHT, clearColorBlue, false);
+
+        // TODO: Make it so that each loop render the quad with the corresponding framebuffer 
+        for (int i = 0; i < size; i++)
+        {
+            glBindVertexArray(quadVAO);
+            if (i == 0 || i == 2)
+            {
+                glBindTexture(GL_TEXTURE_2D, aa.renderedTexture);	// use the color attachment texture as the texture of the quad plane
+            }
+
+            glDrawArrays(GL_TRIANGLES, 0, 6);
         }
 
         // // render the triangle
@@ -412,39 +418,7 @@ int main(void)
         // glDrawArrays(GL_TRIANGLES, 0, 36);
 
 
-// #ifdef MSAA_FXAA
-//         // 2. now blit multisampled buffer(s) to normal colorbuffer of intermediate FBO. Image is stored in screenTexture
-//         glBindFramebuffer(GL_READ_FRAMEBUFFER, FramebufferName);
-//         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, intermediateFBO);
-//         glBlitFramebuffer(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, GL_COLOR_BUFFER_BIT, GL_NEAREST);
-// #endif
-
-
-
-#ifdef MY_SHADER
-        // Specifies screen shader
-        screenShader.bind();
-
-        // Generates view matrix
-        viewMat = camera.mat(camera.Zoom, 0.1f, 100.0f);
-
-        // Sets projection matrix uniform
-        shader.setUniformMat4f("u_Camera", viewMat);
-#endif
-
-        glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
-        // now bind back to default framebuffer and draw a quad plane with the attached framebuffer color texture
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        glDisable(GL_DEPTH_TEST); // disable depth test so screen-space quad isn't discarded due to depth test.
         
-        // clear all relevant buffers
-        glClearColor(1.0f, 1.0f, 1.0f, 1.0f); // set clear color to white (not really necessary actually, since we won't be able to see behind the quad anyways)
-        glClear(GL_COLOR_BUFFER_BIT);
-
-        glBindVertexArray(quadVAO);
-        glBindTexture(GL_TEXTURE_2D, aa.renderedTexture);
-        glDrawArrays(GL_TRIANGLES, 0, 6);
-
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
         // Camera polling

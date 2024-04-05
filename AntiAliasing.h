@@ -9,7 +9,7 @@ class AntiAliasing {
 public:
     int WINDOW_WIDTH = 600, WINDOW_HEIGHT = 600;
 
-    GLuint renderedTexture, textureColorBufferMultiSampled;
+    GLuint renderedTexture, textureColorBufferMultiSampled, FXAATexture;
 
     AntiAliasing() = default;
 
@@ -27,6 +27,10 @@ public:
     // FXAA implementation
     GLuint setupFXAA(int width, int height);
 
-    // MSAA implementation
+    // SMAA implementation
     GLuint setupSMAA(int width, int height);
+
+    // Apply framebuffer
+    static void applyFramebuffer(GLuint& framebuffer, int width, int height, 
+                                float clearColor[4], bool isDepth = true);
 };
