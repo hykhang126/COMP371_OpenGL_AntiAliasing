@@ -28,6 +28,7 @@
 #define ANTI_ALIASING
 #define RENDER_TO_TEXTURE
 #define MY_SHADER
+#define MSAA_FXAA
 
 
 
@@ -68,7 +69,7 @@ float deltaTime = 0.0f;
 float lastFrame = 0.0f;
 
 // camera
-Camera camera(WINDOW_WIDTH, WINDOW_HEIGHT, glm::vec3(2.0f, 0.0f, 4.0f));
+Camera camera(WINDOW_WIDTH, WINDOW_HEIGHT, glm::vec3(1.5f, 0.0f, 4.0f));
 
 int main(void)
 {
@@ -81,6 +82,10 @@ int main(void)
 #endif
 
     GLFWwindow* window;
+
+#ifdef ANTI_ALIASING
+    glfwWindowHint(GLFW_SAMPLES, 4);
+#endif
 
     /* Create a windowed mode window and its OpenGL context */
     window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_WIDTH, "Anti-Aliasing", NULL, NULL);
@@ -105,6 +110,9 @@ int main(void)
 
     // Z-buffer
     glEnable(GL_DEPTH_TEST);
+#ifdef ANTI_ALIASING
+    glEnable(GL_MULTISAMPLE); 
+#endif
 
     // // Wireframe mode
     // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -120,7 +128,7 @@ int main(void)
     // Shader for triangles
     Shader shader( src + "/shaders/Simple.vs", src + "/shaders/Simple.fs" );
     shader.bind();
-    shader.setUniform1i("texture1", 0);
+    shader.setUniform1i("screenTexture", 0);
 
     // FXAA uniform sampler2D is called 'screenTexture' instead of 'texture1'
     Shader FXAA_Shader( src + "/shaders/Simple.vs", src + "/shaders/FXAA_2.fs" );
@@ -252,64 +260,93 @@ int main(void)
     // framebuffer configuration
     // -------------------------
 #ifdef RENDER_TO_TEXTURE
-    // The framebuffer, which regroups 0, 1, or more textures, and 0 or 1 depth buffer.
-    GLuint FramebufferName;
-    glGenFramebuffers(1, &FramebufferName);
-    glBindFramebuffer(GL_FRAMEBUFFER, FramebufferName);
+    // // The framebuffer, which regroups 0, 1, or more textures, and 0 or 1 depth buffer.
+    // GLuint FramebufferName;
+    // glGenFramebuffers(1, &FramebufferName);
+    // glBindFramebuffer(GL_FRAMEBUFFER, FramebufferName);
 
-    // The texture we're going to render to
-    GLuint renderedTexture;
-    glGenTextures(1, &renderedTexture);
+    // // The texture we're going to render to
+    // GLuint renderedTexture;
+    // glGenTextures(1, &renderedTexture);
 
-    // "Bind" the newly created texture : all future texture functions will modify this texture
-    glBindTexture(GL_TEXTURE_2D, renderedTexture);
+    // // "Bind" the newly created texture : all future texture functions will modify this texture
+    // glBindTexture(GL_TEXTURE_2D, renderedTexture);
+    // // glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, renderedTexture);
 
-    // Give an empty image to OpenGL ( the last "0" )
-    glTexImage2D(GL_TEXTURE_2D, 0,GL_RGB, FBO_WIDTH, FBO_HEIGHT, 0,GL_RGB, GL_UNSIGNED_BYTE, 0);
+    // // Give an empty image to OpenGL ( the last "0" )
+    // glTexImage2D(GL_TEXTURE_2D, 0,GL_RGB, FBO_WIDTH, FBO_HEIGHT, 0,GL_RGB, GL_UNSIGNED_BYTE, 0);
+    // // glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 4, GL_RGB, FBO_WIDTH, FBO_HEIGHT, GL_TRUE);
+    // // glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
 
-    // Poor filtering. Needed !
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
-    // Set "renderedTexture" as our colour attachement #0
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, renderedTexture, 0);
+    // // Poor filtering. Needed !
+    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
-    // create a renderbuffer object for depth and stencil attachment (we won't be sampling these)
-    unsigned int rbo;
-    glGenRenderbuffers(1, &rbo);
-    glBindRenderbuffer(GL_RENDERBUFFER, rbo);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, FBO_WIDTH, FBO_HEIGHT); // use a single renderbuffer object for both a depth AND stencil buffer.
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo); // now actually attach it
+    // // Set "renderedTexture" as our colour attachement #0
+    // glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, renderedTexture, 0);
+    // // glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, renderedTexture, 0);
 
-    // // Set the list of draw buffers.
-    // GLenum DrawBuffers[1] = {GL_COLOR_ATTACHMENT0};
-    // glDrawBuffers(1, DrawBuffers); // "1" is the size of DrawBuffers
 
-    // Always check that our framebuffer is ok
-    if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-    return false;
+    // // create a renderbuffer object for depth and stencil attachment (we won't be sampling these)
+    // unsigned int rbo;
+    // glGenRenderbuffers(1, &rbo);
+    // glBindRenderbuffer(GL_RENDERBUFFER, rbo);
+    // glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, FBO_WIDTH, FBO_HEIGHT); // use a single renderbuffer object for both a depth AND stencil buffer.
+    // // glRenderbufferStorageMultisample(GL_RENDERBUFFER, 4, GL_DEPTH24_STENCIL8, FBO_WIDTH, FBO_HEIGHT);
+    // glBindRenderbuffer(GL_RENDERBUFFER, 0);
+    // glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo); // now actually attach it
 
-    // Unbind our custom framebuffer and rebind it to the default framebuffer
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    // // // Set the list of draw buffers.
+    // // GLenum DrawBuffers[1] = {GL_COLOR_ATTACHMENT0};
+    // // glDrawBuffers(1, DrawBuffers); // "1" is the size of DrawBuffers
+
+    // // Always check that our framebuffer is ok
+    // if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+    // {
+    //     std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
+    //     return false;
+    // }
+
+    // // Unbind our custom framebuffer and rebind it to the default framebuffer
+    // glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     #ifndef MY_SHADER
         // Create and compile our GLSL program from the shaders
         GLuint quad_programID = Shader::LoadShaders( src + "/shaders/Simple.vertex", src + "/shaders/FXAA.frag" );
         GLuint texID = glGetUniformLocation(quad_programID, "renderedTexture");
         GLuint timeID = glGetUniformLocation(quad_programID, "time");
-    #else
-        // std::cout << "Using my shader with a rendered texture" << std::endl;
-        // shader.setUniform1i("screenTexture", 0);
     #endif
 #endif
 
-
-
-
 #ifdef ANTI_ALIASING
     AntiAliasing aa (WINDOW_WIDTH, WINDOW_HEIGHT);
-    // Do something
+
+    // None setup
+    GLuint FramebufferName = aa.setupNone(FBO_WIDTH, FBO_HEIGHT);
+    // MSAA setup
+    GLuint MSAAframebuffer = aa.setupMSAA(FBO_WIDTH, FBO_HEIGHT);
 #endif
+
+#ifdef MSAA_FXAA
+    // configure second post-processing framebuffer
+    unsigned int intermediateFBO;
+    glGenFramebuffers(1, &intermediateFBO);
+    glBindFramebuffer(GL_FRAMEBUFFER, intermediateFBO);
+    // create a color attachment texture
+    unsigned int screenTexture;
+    glGenTextures(1, &screenTexture);
+    glBindTexture(GL_TEXTURE_2D, screenTexture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, WINDOW_WIDTH, WINDOW_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, screenTexture, 0);	// we only need a color buffer
+
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+        std::cout << "ERROR::FRAMEBUFFER:: Intermediate framebuffer is not complete!" << std::endl;
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+#endif
+
 
 
 
@@ -349,10 +386,10 @@ int main(void)
         glm::mat4 viewMat = camera.mat(camera.Zoom, 0.1f, 100.0f);
 
         // Specifies shader
-        FXAA_Shader.bind();
+        shader.bind();
 
         // Sets projection matrix uniform
-        FXAA_Shader.setUniformMat4f("u_Camera", viewMat);
+        shader.setUniformMat4f("u_Camera", viewMat);
 #endif
 
         for (int i = 0; i < size; i++)
@@ -375,11 +412,24 @@ int main(void)
         // glDrawArrays(GL_TRIANGLES, 0, 36);
 
 
+// #ifdef MSAA_FXAA
+//         // 2. now blit multisampled buffer(s) to normal colorbuffer of intermediate FBO. Image is stored in screenTexture
+//         glBindFramebuffer(GL_READ_FRAMEBUFFER, FramebufferName);
+//         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, intermediateFBO);
+//         glBlitFramebuffer(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+// #endif
+
 
 
 #ifdef MY_SHADER
         // Specifies screen shader
         screenShader.bind();
+
+        // Generates view matrix
+        viewMat = camera.mat(camera.Zoom, 0.1f, 100.0f);
+
+        // Sets projection matrix uniform
+        shader.setUniformMat4f("u_Camera", viewMat);
 #endif
 
         glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
@@ -391,11 +441,8 @@ int main(void)
         glClearColor(1.0f, 1.0f, 1.0f, 1.0f); // set clear color to white (not really necessary actually, since we won't be able to see behind the quad anyways)
         glClear(GL_COLOR_BUFFER_BIT);
 
-        glBlitFramebuffer(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, 
-                            GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, GL_NEAREST);
-
         glBindVertexArray(quadVAO);
-        glBindTexture(GL_TEXTURE_2D, renderedTexture);
+        glBindTexture(GL_TEXTURE_2D, aa.renderedTexture);
         glDrawArrays(GL_TRIANGLES, 0, 6);
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
