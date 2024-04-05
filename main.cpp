@@ -44,13 +44,13 @@ struct Particle {
 // The fullscreen quad's FBO
 float quadVertices[] = { // vertex attributes for a quad that fills the entire screen in Normalized Device Coordinates.
     // positions   // texCoords
-    -0.5f,  0.5f,  0.0f, 1.0f,
-    -0.5f, -0.5f,  0.0f, 0.0f,
-    0.5f, -0.5f,  1.0f, 0.0f,
+    -3.0f,  1.0f,  0.0f, 1.0f,
+    -3.0f, -1.0f,  0.0f, 0.0f,
+    -1.0f, -1.0f,  1.0f, 0.0f,
 
-    -0.5f,  0.5f,  0.0f, 1.0f,
-    0.5f, -0.5f,  1.0f, 0.0f,
-    0.5f,  0.5f,  1.0f, 1.0f
+    -3.0f,  1.0f,  0.0f, 1.0f,
+    -1.0f, -1.0f,  1.0f, 0.0f,
+    -1.0f,  1.0f,  1.0f, 1.0f
 };
 
 float triVertices[] = {
@@ -72,8 +72,8 @@ float triVertices[] = {
 int WINDOW_WIDTH = 900;
 int WINDOW_HEIGHT = 900;
 
-int FBO_WIDTH = 100;
-int FBO_HEIGHT = 100;
+int FBO_WIDTH = 50;
+int FBO_HEIGHT = 50;
 
 // timing
 float deltaTime = 0.0f;
@@ -88,6 +88,8 @@ std::string src = getCurrentPath();
 // Clears the screen and sets the background color
 float clearColorBlack[4] = {0.1f, 0.1f, 0.1f, 1.0f};
 float clearColorWhite[4] = {1.0f, 1.0f, 1.0f, 1.0f};
+float clearColorRed[4] = {1.0f, 0.0f, 0.0f, 1.0f};
+float clearColorGreen[4] = {0.0f, 1.0f, 0.0f, 1.0f};
 float clearColorBlue[4] = {0.0f, 0.0f, 1.0f, 1.0f};
 
 int main(void)
@@ -146,6 +148,10 @@ int main(void)
     Shader shader( src + "/shaders/Simple.vs", src + "/shaders/Simple.fs" );
     shader.bind();
     shader.setUniform1i("screenTexture", 0);
+
+    // Shader for MSAA
+    Shader MSAA_shader( src + "/shaders/MSAA.vs", src + "/shaders/MSAA.fs" );
+    MSAA_shader.bind();
 
     // Shader for FXAA
     Shader FXAA_Shader( src + "/shaders/Simple.vs", src + "/shaders/FXAA_2.fs" );
@@ -249,45 +255,41 @@ int main(void)
         glEnableVertexAttribArray(1);  
     }  
 
-    // screen quad VAO
-    GLuint quadVAO, quadVBO;
-    glGenVertexArrays(1, &quadVAO);
-    glGenBuffers(1, &quadVBO);
-    glBindVertexArray(quadVAO);
-    glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
-    // position attribute
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
-    // texture coord attribute
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+    // setup quad VAO
+    offset = quadVertices[8] - quadVertices[0] + 0.1f;
+    float xAdjust = 0.1f;
 
+    GLuint quadVAO[size], quadVBO[size];
+    glGenVertexArrays(size, quadVAO);
+    glGenBuffers(size, quadVBO);
 
-    // GLuint quadVAO[size], quadVBO[size];
-    // glGenVertexArrays(size, quadVAO);
-    // glGenBuffers(size, quadVBO);
+    for (int i = 0; i < size; i++)
+    {
+        float newQuadVertices[sizeof(quadVertices)];
+        std::copy(quadVertices, quadVertices + sizeof(quadVertices) / sizeof(float), newQuadVertices);
+        for (int j = 0; j < sizeof(quadVertices) / sizeof(float); j++)
+        {
+            if (j % 4 == 0)
+            {
+                newQuadVertices[j] = (quadVertices[j] + i * offset - xAdjust) / (size + xAdjust);
+            }
+            else if ((j-1) % 4 == 0)
+            {
+                newQuadVertices[j] = quadVertices[j] / (size + xAdjust);
+            }
+        }   
 
-    // for (int i = 0; i < size; i++)
-    // {
-    //     float newQuadVertices[sizeof(quadVertices)];
-    //     std::copy(quadVertices, quadVertices + sizeof(quadVertices) / sizeof(float), newQuadVertices);
-    //     for (int j = 0; j < sizeof(quadVertices) / sizeof(float); j++)
-    //     {
+        glBindVertexArray(quadVAO[i]);
 
-    //     }   
-
-    //     glBindVertexArray(quadVAO[i]);
-
-    //     glBindBuffer(GL_ARRAY_BUFFER, quadVBO[i]);
-    //     glBufferData(GL_ARRAY_BUFFER, sizeof(newQuadVertices), &newQuadVertices, GL_STATIC_DRAW);
-    //     // position attribute
-    //     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
-    //     glEnableVertexAttribArray(0);  
-    //     // texture coord attribute
-    //     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
-    //     glEnableVertexAttribArray(1);  
-    // } 
+        glBindBuffer(GL_ARRAY_BUFFER, quadVBO[i]);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(newQuadVertices), &newQuadVertices, GL_STATIC_DRAW);
+        // position attribute
+        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+        glEnableVertexAttribArray(0);  
+        // texture coord attribute
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+        glEnableVertexAttribArray(1);  
+    } 
 
     // Anti aliasing configuration by returning framebuffer ref.
     // -------------------------
@@ -311,7 +313,7 @@ int main(void)
     unsigned int screenTexture;
     glGenTextures(1, &screenTexture);
     glBindTexture(GL_TEXTURE_2D, screenTexture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, WINDOW_WIDTH, WINDOW_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, FBO_WIDTH, FBO_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, screenTexture, 0);	// we only need a color buffer
@@ -330,10 +332,6 @@ int main(void)
     // ---------------------
     while (!glfwWindowShouldClose(window))
     {
-        // renderer.clear();
-        // // Draws triangles
-        // renderer.draw(va, ibo, shader, false);
-
         // per-frame time logic
         // --------------------
         float currentFrame = static_cast<float>(glfwGetTime());
@@ -349,7 +347,7 @@ int main(void)
 
         for (int i = 0; i < size; i++)
         {
-            // 1. None 2. MSAA 3. FXAA
+            // 0. None 1. MSAA 2. FXAA
             if (i == 0)
             {
                 // Specifies shader
@@ -358,64 +356,75 @@ int main(void)
                 shader.setUniformMat4f("u_Camera", viewMat);
                 // Bind to the corresponding framebuffer
                 aa.applyFramebuffer(NoAAframebuffer, FBO_WIDTH, FBO_HEIGHT, clearColorWhite, true);
+                // render the triangle
+                glBindVertexArray(triVAO[0]);
+                // binds texture to slot 0
+                glActiveTexture(GL_TEXTURE0);
+                glBindTexture(GL_TEXTURE_2D, triTexture);
             }
             if (i == 1)
             {
-                shader.bind();
-                shader.setUniformMat4f("u_Camera", viewMat);
-                // aa.applyFramebuffer(MSAAframebuffer, FBO_WIDTH, FBO_HEIGHT, true);
+                MSAA_shader.bind();
+                MSAA_shader.setUniformMat4f("u_Camera", viewMat);
+                aa.applyFramebuffer(MSAAframebuffer, FBO_WIDTH, FBO_HEIGHT, clearColorBlack, true);
+
+                glBindVertexArray(triVAO[0]);
+
+                glActiveTexture(GL_TEXTURE0);
+                glBindTexture(GL_TEXTURE_2D, triTexture);
+
+// #ifdef MSAA_FXAA
+//                 // 2. now blit multisampled buffer(s) to normal colorbuffer of intermediate FBO. Image is stored in screenTexture
+//                 glBindFramebuffer(GL_READ_FRAMEBUFFER, MSAAframebuffer);
+//                 glBindFramebuffer(GL_DRAW_FRAMEBUFFER, intermediateFBO);
+//                 glBlitFramebuffer(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+// #endif
             }
             if (i == 2)
             {
                 FXAA_Shader.bind();
                 FXAA_Shader.setUniformMat4f("u_Camera", viewMat);
-                // aa.applyFramebuffer(FXAAframebuffer, FBO_WIDTH, FBO_HEIGHT, true);
+                aa.applyFramebuffer(FXAAframebuffer, FBO_WIDTH, FBO_HEIGHT, clearColorBlue, true);
+
+                glBindVertexArray(triVAO[0]);
+
+                glActiveTexture(GL_TEXTURE0);
+                glBindTexture(GL_TEXTURE_2D, triTexture);
             }
 
-            // render the triangle
-            glBindVertexArray(triVAO[i]);
-            // binds texture to slot 0
-            glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, triTexture);
             // draw the triangle
             glDrawArrays(GL_TRIANGLES, 0, 3);
+
+            // RESET
+            glBindVertexArray(0);
         }
-
-
-            
-#ifdef MSAA_FXAA
-        // 2. now blit multisampled buffer(s) to normal colorbuffer of intermediate FBO. Image is stored in screenTexture
-        glBindFramebuffer(GL_READ_FRAMEBUFFER, NoAAframebuffer);
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, intermediateFBO);
-        glBlitFramebuffer(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, GL_COLOR_BUFFER_BIT, GL_NEAREST);
-#endif
 
         // Specifies screen shader
         screenShader.bind();
 
         // 3. now render quad with scene's visuals as its texture image
         GLuint DefaultFramebuffer = 0;
-        aa.applyFramebuffer(DefaultFramebuffer, WINDOW_WIDTH, WINDOW_HEIGHT, clearColorBlue, false);
+        aa.applyFramebuffer(DefaultFramebuffer, WINDOW_WIDTH, WINDOW_HEIGHT, clearColorBlack, false);
 
         // TODO: Make it so that each loop render the quad with the corresponding framebuffer 
         for (int i = 0; i < size; i++)
         {
-            glBindVertexArray(quadVAO);
-            if (i == 0 || i == 2)
+            glBindVertexArray(quadVAO[i]);
+            if (i == 0)
             {
                 glBindTexture(GL_TEXTURE_2D, aa.renderedTexture);	// use the color attachment texture as the texture of the quad plane
+            }
+            else if (i == 1)
+            {
+                glBindTexture(GL_TEXTURE_2D, aa.textureColorBufferMultiSampled);	// use the color attachment texture as the texture of the quad plane
+            }
+            else if (i == 2)
+            {
+                glBindTexture(GL_TEXTURE_2D, aa.FXAATexture);	// use the color attachment texture as the texture of the quad plane
             }
 
             glDrawArrays(GL_TRIANGLES, 0, 6);
         }
-
-        // // render the triangle
-        // glBindVertexArray(triVAO[0]);
-        // // binds texture to slot 0
-        // glActiveTexture(GL_TEXTURE0);
-        // glBindTexture(GL_TEXTURE_2D, triTexture);
-        // // draw the triangle
-        // glDrawArrays(GL_TRIANGLES, 0, 36);
 
 
         

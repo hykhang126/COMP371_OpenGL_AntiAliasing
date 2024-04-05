@@ -99,7 +99,6 @@ public:
         glCompileShader(fragment);
         checkCompileErrors(fragment, "FRAGMENT");
         // shader Program
-		std::cout << "Creating shader program" << std::endl;
         renderer_id = glCreateProgram();
         glAttachShader(renderer_id, vertex);
         glAttachShader(renderer_id, fragment);
