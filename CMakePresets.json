@@ -7,7 +7,8 @@
 			"binaryDir": "C:\\Users\\htran1\\Downloads\\COMP371_OpenGL_AntiAliasing\\build",
 			"cacheVariables": {
 				"CMAKE_BUILD_TYPE": "Debug"
-			}
+			},
+			"toolchainFile": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
 		}
 	]
 }

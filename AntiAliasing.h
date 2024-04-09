@@ -13,10 +13,12 @@ public:
 
     AntiAliasing() = default;
 
-    AntiAliasing(int WINDOW_WIDTH, int WINDOW_HEIGHT, int FBO_WIDTH, int FBO_HEIGHT) {
+    AntiAliasing(int WINDOW_WIDTH, int WINDOW_HEIGHT) {
         this->WINDOW_WIDTH = WINDOW_WIDTH;
         this->WINDOW_HEIGHT = WINDOW_HEIGHT;
-        setupNone(FBO_WIDTH, FBO_HEIGHT);
+        renderedTexture = -1;
+        textureColorBufferMultiSampled = -1;
+        FXAATexture = -1;
     };
 
     // No anti-aliasing implementation

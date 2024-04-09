@@ -147,7 +147,7 @@ GLuint AntiAliasing::setupFXAA(int width, int height)
 
 GLuint AntiAliasing::setupSMAA(int width, int height)
 {
-    unsigned int framebuffer;
+    unsigned int framebuffer = -1;
 
     return framebuffer;
 }

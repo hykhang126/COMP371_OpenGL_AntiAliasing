@@ -15,16 +15,23 @@ if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET antialias PROPERTY CXX_STANDARD 20)
 endif()
 
-include_directories(C:/Users/htran1/Downloads/COMP371/packages/glfw-3.3.9.bin.WIN64/include)
-include_directories(C:/Users/htran1/Downloads/COMP371/packages/glm-1.0.0/)
-include_directories(C:/Users/htran1/Downloads/COMP371/packages/glew-2.2.0/include/)
-include_directories(C:/Users/htran1/Downloads/COMP371/packages/eigen-3.4.0/)
+# TODO: Add tests and install targets if needed.
+find_package(glm CONFIG REQUIRED)
+target_link_libraries(antialias PRIVATE glm::glm)
+find_package(GLEW REQUIRED)
+target_link_libraries(antialias PRIVATE GLEW::GLEW)
+find_package(glfw3 CONFIG REQUIRED)
+target_link_libraries(antialias PRIVATE glfw)
+# find_package(imgui CONFIG REQUIRED)
+# target_link_libraries(antialias PRIVATE imgui::imgui)
+find_package(Eigen3 CONFIG REQUIRED)
+target_link_libraries(antialias PRIVATE Eigen3::Eigen)
 
 
-  # Adds vendors, textures, shaders
-	target_include_directories(antialias PRIVATE vendors)
-	target_include_directories(antialias PRIVATE textures)
-	target_include_directories(antialias PRIVATE shaders)
+# Adds vendors, textures, shaders
+target_include_directories(antialias PRIVATE vendors)
+target_include_directories(antialias PRIVATE textures)
+target_include_directories(antialias PRIVATE shaders)
 
    target_sources(antialias PRIVATE
    Camera.cpp
