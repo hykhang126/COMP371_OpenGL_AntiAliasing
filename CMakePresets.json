@@ -3,7 +3,8 @@
 	"configurePresets": [
 		{
 			"name": "default",
-			"binaryDir": "${sourceDir}/build",
+			"generator": "Ninja",
+			"binaryDir": "C:\\Users\\htran1\\Downloads\\COMP371_OpenGL_AntiAliasing\\build",
 			"cacheVariables": {
 				"CMAKE_BUILD_TYPE": "Debug"
 			}

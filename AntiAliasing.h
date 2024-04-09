@@ -13,9 +13,10 @@ public:
 
     AntiAliasing() = default;
 
-    AntiAliasing(int WINDOW_WIDTH, int WINDOW_HEIGHT) {
+    AntiAliasing(int WINDOW_WIDTH, int WINDOW_HEIGHT, int FBO_WIDTH, int FBO_HEIGHT) {
         this->WINDOW_WIDTH = WINDOW_WIDTH;
         this->WINDOW_HEIGHT = WINDOW_HEIGHT;
+        setupNone(FBO_WIDTH, FBO_HEIGHT);
     };
 
     // No anti-aliasing implementation

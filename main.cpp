@@ -205,7 +205,7 @@ int main(void)
     /*
     THE ORDER OF VAO: NO ANTI-ALIASING 0, MSAA 1, FXAA 2
     */
-    int size = 3;
+    const int size = 3;
     float offset = triVertices[4] - triVertices[0] + 0.5f;
 
     GLuint triVAO[size], triVBO[size];
