@@ -81,11 +81,11 @@ float triVertices[] = {
 // };
 
 // Settings
-int WINDOW_WIDTH = 900;
-int WINDOW_HEIGHT = 900;
+const int WINDOW_WIDTH = 900;
+const int WINDOW_HEIGHT = 900;
 
-int FBO_WIDTH = 15;
-int FBO_HEIGHT = 15;
+const int DEFAULT_FBO_WIDTH = 15;
+const int DEFAULT_FBO_HEIGHT = 15;
 
 // timing
 float deltaTime = 0.0f;
@@ -104,8 +104,16 @@ float clearColorRed[4] = {1.0f, 0.0f, 0.0f, 1.0f};
 float clearColorGreen[4] = {0.0f, 1.0f, 0.0f, 1.0f};
 float clearColorBlue[4] = {0.0f, 0.0f, 1.0f, 1.0f};
 
-int main(void)
+int main(int argc, char* argv[])
 {
+    // PROCESS USER INPUT
+    char* width_input = argv[1];
+    char* height_input = argv[2];
+    int FBO_WIDTH, FBO_HEIGHT;
+    (argc < 3) ? FBO_WIDTH = DEFAULT_FBO_WIDTH : sscanf_s(width_input, "%d", &FBO_WIDTH);
+    (argc < 3) ? FBO_HEIGHT = DEFAULT_FBO_WIDTH : sscanf_s(height_input, "%d", &FBO_HEIGHT);
+
+
     /* Initialize the library */
     if (!glfwInit())
         return -1;
@@ -164,6 +172,7 @@ int main(void)
     // Shader for MSAA
     Shader MSAA_shader( src + "/shaders/MSAA.vs", src + "/shaders/MSAA.fs" );
     MSAA_shader.bind();
+    shader.setUniform1i("screenTexture", 0);
 
     // Shader for FXAA
     Shader FXAA_Shader( src + "/shaders/Simple.vs", src + "/shaders/FXAA_2.fs" );
@@ -353,7 +362,7 @@ int main(void)
                 // Sets projection matrix uniform
                 shader.setUniformMat4f("u_Camera", viewMat);
                 // Bind to the corresponding framebuffer
-                aa.applyFramebuffer(NoAAframebuffer, FBO_WIDTH, FBO_HEIGHT, clearColorWhite, true);
+                aa.applyFramebuffer(NoAAframebuffer, FBO_WIDTH, FBO_HEIGHT, clearColorBlack, true);
                 // render the triangle
                 glBindVertexArray(triVAO[0]);
                 // binds texture to slot 0
@@ -367,7 +376,7 @@ int main(void)
             {
                 MSAA_shader.bind();
                 MSAA_shader.setUniformMat4f("u_Camera", viewMat);
-                aa.applyFramebuffer(MSAAframebuffer, FBO_WIDTH, FBO_HEIGHT, clearColorWhite, true);
+                aa.applyFramebuffer(MSAAframebuffer, FBO_WIDTH, FBO_HEIGHT, clearColorBlack, true);
 
                 glBindVertexArray(triVAO[0]);
 
@@ -385,7 +394,7 @@ int main(void)
             {
                 FXAA_Shader.bind();
                 FXAA_Shader.setUniformMat4f("u_Camera", viewMat);
-                aa.applyFramebuffer(FXAAframebuffer, FBO_WIDTH, FBO_HEIGHT, clearColorWhite, true);
+                aa.applyFramebuffer(FXAAframebuffer, FBO_WIDTH, FBO_HEIGHT, clearColorBlack, true);
 
                 glBindVertexArray(triVAO[0]);
 
@@ -413,7 +422,7 @@ int main(void)
 
         // 3. now render quad with scene's visuals as its texture image
         GLuint DefaultFramebuffer = 0;
-        aa.applyFramebuffer(DefaultFramebuffer, WINDOW_WIDTH, WINDOW_HEIGHT, clearColorBlack, false);
+        aa.applyFramebuffer(DefaultFramebuffer, WINDOW_WIDTH, WINDOW_HEIGHT, clearColorWhite, false);
 
         for (int i = 0; i < size; i++)
         {
@@ -421,17 +430,17 @@ int main(void)
             glActiveTexture(GL_TEXTURE0);
             if (i == 0)
             {
-                glBindTexture(GL_TEXTURE_2D, aa.renderedTexture);	// use the color attachment texture as the texture of the quad plane
+                glBindTexture(GL_TEXTURE_2D, aa.renderedTexture);	// use the no AA texture
                 glDrawArrays(GL_TRIANGLES, 0, 6);
             }
             else if (i == 1)
             {
-                glBindTexture(GL_TEXTURE_2D, MSAATexture);	// use the color attachment texture as the texture of the quad plane
+                glBindTexture(GL_TEXTURE_2D, MSAATexture);	// use the MSAA texture
                 glDrawArrays(GL_TRIANGLES, 0, 6);
             }
             else if (i == 2)
             {
-                glBindTexture(GL_TEXTURE_2D, aa.FXAATexture);	// use the color attachment texture as the texture of the quad plane
+                glBindTexture(GL_TEXTURE_2D, aa.FXAATexture);	// use the FXAA texture
                 glDrawArrays(GL_TRIANGLES, 0, 6);
             }
 

@@ -4,7 +4,7 @@ GLuint AntiAliasing::setupMSAA(int width, int height)
 {
     // configure MSAA framebuffer
     // --------------------------
-    int MSAA = 100;
+    int MSAA = 4;
     unsigned int framebuffer;
     glGenFramebuffers(1, &framebuffer);
     glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
