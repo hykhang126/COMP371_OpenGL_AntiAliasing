@@ -33,29 +33,27 @@ target_include_directories(antialias PRIVATE vendors)
 target_include_directories(antialias PRIVATE textures)
 target_include_directories(antialias PRIVATE shaders)
 
-   target_sources(antialias PRIVATE
-   Camera.cpp
-   Camera.h
-   Cloth.cpp
-   Cloth.h
-   IndexBuffer.cpp
-   IndexBuffer.h
-   Renderer.cpp
-   Renderer.h
-   Shader.cpp
-   Shader.h
-   Texture.cpp
-   Texture.h
-   VertexArray.cpp
-   VertexArray.h
-   VertexBuffer.cpp
-   VertexBuffer.h
-   VertexBufferLayout.cpp
-   VertexBufferLayout.h
-   AntiAliasing.cpp
-   AntiAliasing.h
-   vendors/stb_image.cpp
-   vendors/stb_image.h
-   textures/basketball.png
-   shaders/Basic.shader
+target_sources(antialias PRIVATE
+src/Camera.cpp
+src/Camera.h
+src/IndexBuffer.cpp
+src/IndexBuffer.h
+src/Renderer.cpp
+src/Renderer.h
+src/Shader.cpp
+src/Shader.h
+src/Texture.cpp
+src/Texture.h
+src/VertexArray.cpp
+src/VertexArray.h
+src/VertexBuffer.cpp
+src/VertexBuffer.h
+src/VertexBufferLayout.cpp
+src/VertexBufferLayout.h
+src/AntiAliasing.cpp
+src/AntiAliasing.h
+vendors/stb_image.cpp
+vendors/stb_image.h
+textures/basketball.png
+shaders/Basic.shader
 )

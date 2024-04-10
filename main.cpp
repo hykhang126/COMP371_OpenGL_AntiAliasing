@@ -12,15 +12,15 @@
 #include <vector>
 #include <filesystem>
 
-#include "Renderer.h"
-#include "VertexBuffer.h"
-#include "VertexBufferLayout.h"
-#include "IndexBuffer.h"
-#include "VertexArray.h"
-#include "Shader.h"
-#include "Texture.h"
-#include "Camera.h"
-#include "AntiAliasing.h"
+#include "src/Renderer.h"
+#include "src/VertexBuffer.h"
+#include "src/VertexBufferLayout.h"
+#include "src/IndexBuffer.h"
+#include "src/VertexArray.h"
+#include "src/Shader.h"
+#include "src/Texture.h"
+#include "src/Camera.h"
+#include "src/AntiAliasing.h"
 
 // Vendor include
 #include "vendors/stb_image.h"

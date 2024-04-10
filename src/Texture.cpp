@@ -1,7 +1,7 @@
 #include "Texture.h"
 
 // Vendor include
-#include "vendors/stb_image.h"
+#include "../vendors/stb_image.h"
 
 Texture::Texture(const std::string& fp)
     : fp(fp), renderer_id(0), textureBuffer(nullptr), width(0), height(0), bitsPerPixel(0) 
