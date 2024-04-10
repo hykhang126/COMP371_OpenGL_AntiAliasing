@@ -15,18 +15,29 @@ if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET antialias PROPERTY CXX_STANDARD 20)
 endif()
 
-# TODO: Add tests and install targets if needed.
-find_package(glm CONFIG REQUIRED)
-target_link_libraries(antialias PRIVATE glm::glm)
-find_package(GLEW REQUIRED)
-target_link_libraries(antialias PRIVATE GLEW::GLEW)
-find_package(glfw3 CONFIG REQUIRED)
-target_link_libraries(antialias PRIVATE glfw)
-# find_package(imgui CONFIG REQUIRED)
-# target_link_libraries(antialias PRIVATE imgui::imgui)
-find_package(Eigen3 CONFIG REQUIRED)
-target_link_libraries(antialias PRIVATE Eigen3::Eigen)
+find_package(OpenGL REQUIRED)
 
+add_definitions(
+    -DGLEW_STATIC
+)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_BUILD_TYPE Release)
+
+# for windows
+include_directories(C:/glfw-3.3.9.bin.WIN64/include/)
+include_directories(C:/glew-2.1.0/include/)
+include_directories(C:/glew-2.1.0/include/GL/)
+include_directories(C:/GLM_0.9.9.8/g-truc-glm-bf71a83/)
+
+link_directories(C:/glew-2.1.0/lib/Release/x64/)
+link_directories(C:/glfw-3.3.9.bin.WIN64/lib-vc2019/)
+
+set(GLEW_LIBRARY_PATH "C:/glew-2.1.0/lib/Release/x64/glew32s.lib")
+set(GLFW_LIBRARY_PATH "C:/glfw-3.3.9.bin.WIN64/lib-vc2019/glfw3.lib")
+
+target_link_libraries(antialias ${OPENGL_gl_LIBRARY} ${GLEW_LIBRARY_PATH})
+target_link_libraries(antialias ${OPENGL_gl_LIBRARY} ${GLFW_LIBRARY_PATH})
 
 # Adds vendors, textures, shaders
 target_include_directories(antialias PRIVATE vendors)

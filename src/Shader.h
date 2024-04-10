@@ -8,9 +8,9 @@
 #include <sstream>
 #include <fstream>
 #include <map>
-#include <Eigen/Core>
 #include <glm/glm.hpp>
 #include <glm/gtx/transform.hpp>
+#include <vector>
 
 // #include <Eigen/Core>
 struct ShaderProgramSource

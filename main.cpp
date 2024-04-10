@@ -6,7 +6,6 @@
 #include <fstream>
 #include <string>
 #include <sstream>
-#include <Eigen/Core>
 #include <glm/glm.hpp>
 #include <glm/gtx/transform.hpp>
 #include <vector>
