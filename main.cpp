@@ -10,6 +10,7 @@
 #include <glm/gtx/transform.hpp>
 #include <vector>
 #include <filesystem>
+#include <chrono>
 
 #include "src/Renderer.h"
 #include "src/VertexBuffer.h"
@@ -30,6 +31,7 @@
 #define ANTI_ALIASING
 #define MY_SHADER
 #define MSAA_FXAA
+#define IMGUI
 
 
 
@@ -90,8 +92,10 @@ const int DEFAULT_FBO_WIDTH = 15;
 const int DEFAULT_FBO_HEIGHT = 15;
 
 // timing
-float deltaTime = 0.0f;
-float lastFrame = 0.0f;
+std::chrono::microseconds time_NoAA;
+std::chrono::microseconds time_MSAA;
+std::chrono::microseconds time_FXAA;
+bool time_flag = true;
 
 // camera
 Camera camera(WINDOW_WIDTH, WINDOW_HEIGHT, glm::vec3(0.0f, 0.0f, 4.0f));
@@ -332,12 +336,14 @@ int main(int argc, char* argv[])
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 #endif
 
+#ifdef IMGUI
     // Setup ImGui
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGui::StyleColorsDark();
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init("#version 330");
+#endif
 
 
 
@@ -349,18 +355,13 @@ int main(int argc, char* argv[])
     // ---------------------
     while (!glfwWindowShouldClose(window))
     {
-        // per-frame time logic
-        // --------------------
-        float currentFrame = static_cast<float>(glfwGetTime());
-        deltaTime = currentFrame - lastFrame;
-        lastFrame = currentFrame;
 
+#ifdef IMGUI
         // ImGui
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
-
-        ImGui::Text("FPS %.1f", ImGui::GetIO().Framerate);
+#endif
 
 
 
@@ -374,6 +375,10 @@ int main(int argc, char* argv[])
             // 0. None 1. MSAA 2. FXAA
             if (i == 0)
             {
+                // per-frame time logic
+                // --------------------
+                auto start = std::chrono::high_resolution_clock::now();
+
                 // Specifies shader
                 shader.bind();
                 // Sets projection matrix uniform
@@ -388,9 +393,23 @@ int main(int argc, char* argv[])
 
                 // draw the triangle
                 glDrawArrays(GL_TRIANGLES, 0, 3);
+
+                // Stop measuring time
+                auto stop = std::chrono::high_resolution_clock::now();
+
+                // Calculate the duration
+                if (time_flag) {
+                    time_NoAA = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+                }
+
+                // Output to Imgui
+                std::string text = "None AA execution time: " + std::to_string(time_NoAA.count()) + " ms";
+                ImGui::Text(text.c_str());
             }
             if (i == 1)
             {
+                auto start = std::chrono::high_resolution_clock::now();
+
                 MSAA_shader.bind();
                 MSAA_shader.setUniformMat4f("u_Camera", viewMat);
                 aa.applyFramebuffer(MSAAframebuffer, FBO_WIDTH, FBO_HEIGHT, clearColorBlack, true);
@@ -406,9 +425,23 @@ int main(int argc, char* argv[])
                 glBlitFramebuffer(0, 0, FBO_WIDTH, FBO_HEIGHT, 
                                 0, 0, FBO_WIDTH, FBO_HEIGHT, GL_COLOR_BUFFER_BIT, GL_NEAREST);
                 glDrawArrays(GL_TRIANGLES, 0, 3);
+
+                // Stop measuring time
+                auto stop = std::chrono::high_resolution_clock::now();
+
+                // Calculate the duration
+                if (time_flag) {
+                    time_MSAA = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+                }
+
+                // Output to Imgui
+                std::string text = "MSAA execution time: " + std::to_string(time_MSAA.count()) + " ms";
+                ImGui::Text(text.c_str());
             }
             if (i == 2)
             {
+                auto start = std::chrono::high_resolution_clock::now();
+
                 FXAA_Shader.bind();
                 FXAA_Shader.setUniformMat4f("u_Camera", viewMat);
                 aa.applyFramebuffer(FXAAframebuffer, FBO_WIDTH, FBO_HEIGHT, clearColorBlack, true);
@@ -419,6 +452,18 @@ int main(int argc, char* argv[])
                 glBindTexture(GL_TEXTURE_2D, triTexture);
 
                 glDrawArrays(GL_TRIANGLES, 0, 3);
+
+                // Stop measuring time
+                auto stop = std::chrono::high_resolution_clock::now();
+
+                // Calculate the duration
+                if (time_flag) {
+                    time_FXAA = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+                }
+
+                // Output to Imgui
+                std::string text = "FXAA execution time: " + std::to_string(time_FXAA.count()) + " ms";
+                ImGui::Text(text.c_str());
             }
 
             if (i != 1)
@@ -429,6 +474,12 @@ int main(int argc, char* argv[])
                 glBindTexture(GL_TEXTURE_2D, quadTexture);
                 glDrawArrays(GL_TRIANGLES, 0, 6);
             }
+
+            if (i == 2)
+            {
+                time_flag = false;
+            }
+
 
             // RESET
             glBindVertexArray(0);
@@ -465,14 +516,18 @@ int main(int argc, char* argv[])
 
 
         
+  
+#ifdef IMGUI
+        // ImGUI render
+        ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+#endif
+
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
         // Camera polling
         camera.inputs(window);
         camera.inputs_AA(window);
-
-        ImGui::Render();
-        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
         glfwSwapBuffers(window);
         glfwPollEvents();
