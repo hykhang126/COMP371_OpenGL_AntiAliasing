@@ -23,6 +23,9 @@
 
 // Vendor include
 #include "vendors/stb_image.h"
+#include "vendors/imgui.h"
+#include "vendors/imgui_impl_opengl3.h"
+#include "vendors/imgui_impl_glfw.h"
 
 #define ANTI_ALIASING
 #define MY_SHADER
@@ -187,7 +190,7 @@ int main(int argc, char* argv[])
     FXAA_Shader.setUniform1f("u_lumaThreshold", 0.125f);
     FXAA_Shader.setUniform1f("u_mulReduce", (1.0f/8.0f));
     FXAA_Shader.setUniform1f("u_minReduce", (1.0f/128.0f));
-    FXAA_Shader.setUniform1f("u_maxSpan", 1.0f);
+    FXAA_Shader.setUniform1f("u_maxSpan", 10.0f);
 
     FXAA_Shader.setUniform1i("u_fxaaOn", true);
 
@@ -329,6 +332,14 @@ int main(int argc, char* argv[])
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 #endif
 
+    // Setup ImGui
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGui::StyleColorsDark();
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    ImGui_ImplOpenGL3_Init("#version 330");
+
+
 
 
 
@@ -343,6 +354,13 @@ int main(int argc, char* argv[])
         float currentFrame = static_cast<float>(glfwGetTime());
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
+
+        // ImGui
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+
+        ImGui::Text("FPS %.1f", ImGui::GetIO().Framerate);
 
 
 
@@ -453,10 +471,17 @@ int main(int argc, char* argv[])
         camera.inputs(window);
         camera.inputs_AA(window);
 
+        ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
         glfwSwapBuffers(window);
         glfwPollEvents();
-
     }
+
+    // Imgyu destroy
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
 
     glfwTerminate();
     return 0;

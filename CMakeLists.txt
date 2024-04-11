@@ -41,6 +41,8 @@ target_link_libraries(antialias ${OPENGL_gl_LIBRARY} ${GLFW_LIBRARY_PATH})
 
 # Adds vendors, textures, shaders
 target_include_directories(antialias PRIVATE vendors)
+include_directories(vendors)
+file(GLOB INCLUDE "vendors/*.cpp")
 target_include_directories(antialias PRIVATE textures)
 target_include_directories(antialias PRIVATE shaders)
 
@@ -65,6 +67,18 @@ src/AntiAliasing.cpp
 src/AntiAliasing.h
 vendors/stb_image.cpp
 vendors/stb_image.h
+vendors/imgui.cpp
+vendors/imgui.h
+vendors/imgui_demo.cpp
+vendors/imgui_draw.cpp
+vendors/imgui_impl_glfw.cpp
+vendors/imgui_impl_glfw.h
+vendors/imgui_impl_opengl3.cpp
+vendors/imgui_impl_opengl3.h
+vendors/imgui_impl_opengl3_loader.h
+vendors/imgui_internal.h
+vendors/imgui_tables.cpp
+vendors/imgui_widgets.cpp
 textures/basketball.png
 shaders/Basic.shader
 )
