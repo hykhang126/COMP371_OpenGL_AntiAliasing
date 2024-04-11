@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>COMP 371 Project</title>
+    <link rel="stylesheet" href="./styles/styles.css" />
+    <script async src="./javascript/index.js"></script>
+</head>
+<body>
+
+    <h1>OpenGL Anti Aliasing</h1>
+    <h2>Hy Khang Tran ID: 40181444</h2>
+    <h4 id='date'></h4>
+
+    <h2 id='project-description' style="text-align: left;">Project Description</h2>
+    <p>
+        This is a project for COMP 371 Computer Graphics. The goal of this project
+        is to demonstrate the use of anti-aliasing in OpenGL as well as showcasing it.
+
+        The project will
+        consist of a scene with multiple objects rendered to a display. The objects
+        will be rendered with different anti-aliasing techniques enabled and disabled to show the
+        difference in quality.
+    </p>
+
+    <p>
+        In order to run the project with different triangle's resolution. 
+        We need to cd and open the terminal in the build folder with the antialiasing.exe. 
+        Then run the exe with two integers arguments, specifying the width and the height of the triangle respectively.
+    </p>
+
+    <p>
+        For example: antialiasing.exe 100 100
+    </p>
+
+    <h2 id='expected-results' style="text-align: left;">Expected Results</h2>
+
+    <div class="image-section">
+        <div class="section-style">
+            <img src="./images/msaa.jfif" />
+            <p style="text-align: center">MSAA expected results</p>
+        </div>
+
+        <div class="section-style">
+            <img src="./images/fxaa.jfif" />
+            <p style="text-align: center">FXAA expected results</p>
+        </div>
+    </div>
+
+
+
+    <h2 id='my-results' style="text-align: left;">My Results</h2>
+
+    <div class="section-style">
+        <img src="./images/my.png" />
+        <p style="text-align: center">Triangle Resolution: 100 x 100. From left to right: No anti aliasing, MSAA, FXAA</p>
+    </div>
+
+    <h2 id='ref-ack' style="text-align: center;">References and acknowledgement</h2>
+
+    <div style="text-align: center;">
+        <a href="https://learnopengl.com/Advanced-OpenGL/Anti-Aliasing">
+            OpenGL MSAA anti-aliasing tutorial
+        </a>
+    </div>
+
+    <div style="text-align: center;">
+        <a href="https://www.youtube.com/watch?v=W3gAzLwfIP0&list=PLlrATfBNZ98foTJPJ_Ev03o2oq3-GGOS2">
+            OpenGL abstraction tutorial by thecherno
+        </a>
+    </div>
+
+    <div style="text-align: center;">
+        <a href="https://github.com/choi303/FXAA">
+            OpenGL FXAA implementation
+        </a>
+    </div>
+
+    <div style="text-align: center;">
+        <a href="https://developer.download.nvidia.com/assets/gamedev/files/sdk/11/FXAA_WhitePaper.pdf">
+            NVIDIA FXAA reference
+        </a>
+    </div>
+
+    <div>
+        <p style="text-align: center;">
+            Thank you to the professor Tiberu Popa and his teaching assistants of COMP 371 for their guidance.
+        </p>
+
+        <p style="text-align: center;">
+            And to all my friends Matthew, Simon, Denis, Miguel,... for the collective suffer. You guys are the real ones!
+        </p>
+    </div>
+
+
+
+</body>
+
+
+</html>
